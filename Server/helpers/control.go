@@ -1,0 +1,23 @@
+package helpers
+
+import (
+	"net/http"
+)
+
+func CheckConnection(w http.ResponseWriter, r *http.Request, t int, message string) {
+	token, _ := r.Cookie("token")
+	switch t {
+	case 0:
+		if token != nil {
+			JSON(w, 200, message)
+			return
+		}
+	case 1:
+		if token == nil {
+			JSON(w, 401, message)
+			return
+		}
+	default:
+		return
+	}
+}
