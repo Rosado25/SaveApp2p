@@ -62,6 +62,14 @@ func ValidateJWT(tokenString string) (int64, error) {
 	return userID, nil
 }
 
+func GetTokenFromCookie(r *http.Request) (string, error) {
+	cookie, err := r.Cookie("token")
+	if err != nil {
+		return "", err
+	}
+	return cookie.Value, nil
+}
+
 func ClearTokenCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "token",

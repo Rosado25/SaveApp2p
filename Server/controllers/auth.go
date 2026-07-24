@@ -55,3 +55,46 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 
 	helpers.JSON(w, 200, "Logout successful")
 }
+
+func (c *AuthController) Token(w http.ResponseWriter, r *http.Request) {
+
+	helpers.CheckConnection(w, r, 1, "Not logged in")
+
+	if r.Method != http.MethodGet {
+		helpers.JSON(w, 405, "Method not allowed")
+		return
+	}
+
+	req, err := helpers.GetTokenFromCookie(r)
+	if err != nil {
+		helpers.JSON(w, 401, "Not logged in")
+		return
+	}
+	helpers.JSON(w, 200, map[string]string{"token": req})
+}
+
+func (c *AuthController) CheckConnection(w http.ResponseWriter, r *http.Request) {
+
+	helpers.CheckConnection(w, r, 1, "Not logged in")
+
+	if r.Method != http.MethodPost {
+		helpers.JSON(w, 405, "Method not allowed")
+		return
+	}
+
+	var token struct {
+		Token string `json:"token"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&token); err != nil {
+		helpers.JSON(w, 400, "Invalid request payload")
+		return
+	}
+
+	if _, err := c.service.CheckConnection(r, token.Token); err != nil {
+		helpers.JSON(w, 400, "Token is invalid or expired")
+		return
+	}
+
+	helpers.JSON(w, 200, "Token is valid")
+}
