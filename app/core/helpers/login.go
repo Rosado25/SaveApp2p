@@ -33,5 +33,7 @@ func Login(email string, password string) bool {
 	}
 	defer resp.Body.Close()
 
+	SetToken(w)
+
 	return resp.StatusCode == http.StatusOK
 }
