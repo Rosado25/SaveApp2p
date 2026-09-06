@@ -3,36 +3,49 @@ package helpers
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"sync"
 	"time"
 )
 
-func SetToken(w http.ResponseWriter) {
+var (
+	tokenMu      sync.RWMutex
+	currentToken string
+)
 
-	req, err := http.NewRequest("GET", "http://localhost:8080/Token", nil)
-	if err != nil {
-		JSON(w, 500, "Failed to create request")
-		return
+func SaveTokenFromResponse(resp *http.Response) bool {
+	for _, cookie := range resp.Cookies() {
+		if cookie.Name == "token" && cookie.Value != "" {
+			tokenMu.Lock()
+			currentToken = cookie.Value
+			tokenMu.Unlock()
+			return true
+		}
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:     "token",
-		Value:    req.Header.Get("token"),
-		HttpOnly: true,
-		Path:     "/",
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(24 * time.Hour),
-	})
-
+	return false
 }
 
-func ValidateToken(r *http.Request) (string, error) {
-	cookie, err := r.Cookie("token")
-	if err != nil {
-		return "", err
+func GetToken() string {
+	tokenMu.RLock()
+	defer tokenMu.RUnlock()
+	return currentToken
+}
+
+func ClearToken() {
+	tokenMu.Lock()
+	currentToken = ""
+	tokenMu.Unlock()
+}
+
+func ValidateToken() (string, error) {
+	token := GetToken()
+	if token == "" {
+		return "", errors.New("missing token")
 	}
 
-	body, err := json.Marshal(map[string]string{"token": cookie.Value})
+	body, err := json.Marshal(map[string]string{"token": token})
 	if err != nil {
 		return "", err
 	}
@@ -42,5 +55,17 @@ func ValidateToken(r *http.Request) (string, error) {
 		return "", err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	return cookie.Value, nil
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errors.New("token is invalid or expired")
+	}
+
+	return token, nil
 }

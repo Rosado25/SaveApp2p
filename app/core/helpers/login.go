@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"time"
 )
 
 func Login(email string, password string) bool {
@@ -26,14 +27,16 @@ func Login(email string, password string) bool {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
+	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return false
 	}
 	defer resp.Body.Close()
 
-	SetToken(w)
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
 
-	return resp.StatusCode == http.StatusOK
+	return SaveTokenFromResponse(resp)
 }

@@ -17,7 +17,9 @@ func NewAuthController(s *services.AuthService) *AuthController {
 
 func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
-	helpers.CheckConnection(w, r, 0, "Already logged in")
+	if helpers.CheckConnection(w, r, 0, "Already logged in") {
+		return
+	}
 
 	if r.Method != http.MethodPost {
 		helpers.JSON(w, 405, "Method not allowed")
@@ -41,7 +43,9 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
 func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 
-	helpers.CheckConnection(w, r, 1, "Not logged in")
+	if helpers.CheckConnection(w, r, 1, "Not logged in") {
+		return
+	}
 
 	if r.Method != http.MethodPost {
 		helpers.JSON(w, 405, "Method not allowed")
@@ -58,7 +62,9 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 
 func (c *AuthController) Token(w http.ResponseWriter, r *http.Request) {
 
-	helpers.CheckConnection(w, r, 1, "Not logged in")
+	if helpers.CheckConnection(w, r, 1, "Not logged in") {
+		return
+	}
 
 	if r.Method != http.MethodGet {
 		helpers.JSON(w, 405, "Method not allowed")
@@ -74,9 +80,6 @@ func (c *AuthController) Token(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *AuthController) CheckConnection(w http.ResponseWriter, r *http.Request) {
-
-	helpers.CheckConnection(w, r, 1, "Not logged in")
-
 	if r.Method != http.MethodPost {
 		helpers.JSON(w, 405, "Method not allowed")
 		return
