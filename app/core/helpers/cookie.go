@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/cookiejar"
 	"sync"
 	"time"
 )
@@ -12,7 +13,20 @@ import (
 var (
 	tokenMu      sync.RWMutex
 	currentToken string
+	apiClient    = newAPIClient()
 )
+
+func newAPIClient() *http.Client {
+	jar, err := cookiejar.New(nil)
+	if err != nil {
+		return &http.Client{Timeout: 10 * time.Second}
+	}
+
+	return &http.Client{
+		Jar:     jar,
+		Timeout: 10 * time.Second,
+	}
+}
 
 func SaveTokenFromResponse(resp *http.Response) bool {
 	for _, cookie := range resp.Cookies() {
@@ -56,8 +70,7 @@ func ValidateToken() (string, error) {
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
+	resp, err := apiClient.Do(req)
 	if err != nil {
 		return "", err
 	}
