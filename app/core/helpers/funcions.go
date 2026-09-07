@@ -1,0 +1,35 @@
+package helpers
+
+import (
+	"encoding/json"
+	"net/http"
+)
+
+func GetUsers() ([]map[string]interface{}, error) {
+	req, err := http.NewRequest("GET", "http://localhost:8080/GetUsers", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	token := GetToken()
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "token", Value: token})
+	}
+
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, err
+	}
+
+	var users []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}

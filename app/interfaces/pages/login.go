@@ -25,6 +25,7 @@ func ShowLogin(a fyne.App) {
 
 		if helpers.Login(email.Text, password.Text) {
 			fmt.Println("Login successful!")
+			w.Close()
 			ShowHome(a)
 		} else {
 			fmt.Println("Login failed!")
