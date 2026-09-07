@@ -39,7 +39,3 @@ func (s *AuthService) Logout(w http.ResponseWriter) error {
 	helpers.ClearTokenCookie(w)
 	return nil
 }
-
-func (s *AuthService) CheckConnection(r *http.Request, tokenString string) (int64, error) {
-	return helpers.ValidateJWT(tokenString)
-}

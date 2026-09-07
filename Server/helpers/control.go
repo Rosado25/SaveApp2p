@@ -1,32 +1,44 @@
 package helpers
 
 import (
+	"context"
 	"net/http"
 )
 
-func CheckConnection(w http.ResponseWriter, r *http.Request, t int, message string) bool {
-	token, _ := r.Cookie("token")
-	switch t {
-	case 0:
-		if token != nil {
-			if _, err := ValidateJWT(token.Value); err != nil {
-				return false
-			}
-			JSON(w, 200, message)
-			return true
+type contextKey string
+
+const userIDContextKey contextKey = "userID"
+
+func RequireAuth(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		token, err := GetTokenFromCookie(r)
+		if err != nil {
+			JSON(w, http.StatusUnauthorized, "Not logged in")
+			return
 		}
-	case 1:
-		if token == nil {
-			JSON(w, 401, message)
-			return true
+
+		userID, err := ValidateJWT(token)
+		if err != nil {
+			JSON(w, http.StatusUnauthorized, "Not logged in")
+			return
 		}
-		if _, err := ValidateJWT(token.Value); err != nil {
-			JSON(w, 401, message)
-			return true
-		}
-	default:
+
+		ctx := context.WithValue(r.Context(), userIDContextKey, userID)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func AuthenticatedUserID(ctx context.Context) (int64, bool) {
+	userID, ok := ctx.Value(userIDContextKey).(int64)
+	return userID, ok
+}
+
+func HasValidSession(r *http.Request) bool {
+	token, err := GetTokenFromCookie(r)
+	if err != nil {
 		return false
 	}
 
-	return false
+	_, err = ValidateJWT(token)
+	return err == nil
 }

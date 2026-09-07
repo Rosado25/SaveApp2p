@@ -27,3 +27,7 @@ func (s *DeviceService) CreateDevice(device *models.Device) error {
 
 	return s.repo.CreateDevice(device)
 }
+
+func (s *DeviceService) GetDevicesByUser(userID int64) ([]models.Device, error) {
+	return s.repo.GetDevicesByUser(userID)
+}

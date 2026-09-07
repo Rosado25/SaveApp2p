@@ -19,10 +19,6 @@ func NewDeviceController(s *services.DeviceService) *DeviceController {
 }
 
 func (c *DeviceController) CreateDevice(w http.ResponseWriter, r *http.Request) {
-	if helpers.CheckConnection(w, r, 1, "Not logged in") {
-		return
-	}
-
 	if r.Method != http.MethodPost {
 		helpers.JSON(w, 405, "Method not allowed")
 		return
@@ -37,14 +33,9 @@ func (c *DeviceController) CreateDevice(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	token, err := helpers.GetTokenFromCookie(r)
-	if err != nil {
-		helpers.JSON(w, 401, "Not logged in")
-		return
-	}
-	userID, err := helpers.ValidateJWT(token)
-	if err != nil {
-		helpers.JSON(w, 401, "Not logged in")
+	userID, ok := helpers.AuthenticatedUserID(r.Context())
+	if !ok {
+		helpers.JSON(w, http.StatusUnauthorized, "Not logged in")
 		return
 	}
 
@@ -66,4 +57,25 @@ func (c *DeviceController) CreateDevice(w http.ResponseWriter, r *http.Request) 
 	}
 
 	helpers.JSON(w, 201, device)
+}
+
+func (c *DeviceController) GetDevicesByUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		helpers.JSON(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID, ok := helpers.AuthenticatedUserID(r.Context())
+	if !ok {
+		helpers.JSON(w, http.StatusUnauthorized, "Not logged in")
+		return
+	}
+
+	devices, err := c.service.GetDevicesByUser(userID)
+	if err != nil {
+		helpers.JSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helpers.JSON(w, http.StatusOK, devices)
 }

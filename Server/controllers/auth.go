@@ -17,7 +17,8 @@ func NewAuthController(s *services.AuthService) *AuthController {
 
 func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 
-	if helpers.CheckConnection(w, r, 0, "Already logged in") {
+	if helpers.HasValidSession(r) {
+		helpers.JSON(w, http.StatusConflict, "Already logged in")
 		return
 	}
 
@@ -42,11 +43,6 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
-
-	if helpers.CheckConnection(w, r, 1, "Not logged in") {
-		return
-	}
-
 	if r.Method != http.MethodPost {
 		helpers.JSON(w, 405, "Method not allowed")
 		return
@@ -61,11 +57,6 @@ func (c *AuthController) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *AuthController) Token(w http.ResponseWriter, r *http.Request) {
-
-	if helpers.CheckConnection(w, r, 1, "Not logged in") {
-		return
-	}
-
 	if r.Method != http.MethodGet {
 		helpers.JSON(w, 405, "Method not allowed")
 		return
@@ -82,20 +73,6 @@ func (c *AuthController) Token(w http.ResponseWriter, r *http.Request) {
 func (c *AuthController) CheckConnection(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		helpers.JSON(w, 405, "Method not allowed")
-		return
-	}
-
-	var token struct {
-		Token string `json:"token"`
-	}
-
-	if err := json.NewDecoder(r.Body).Decode(&token); err != nil {
-		helpers.JSON(w, 400, "Invalid request payload")
-		return
-	}
-
-	if _, err := c.service.CheckConnection(r, token.Token); err != nil {
-		helpers.JSON(w, 400, "Token is invalid or expired")
 		return
 	}
 

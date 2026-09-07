@@ -110,3 +110,34 @@ func (r *UserRepository) CreateDevice(device *models.Device) error {
 	}
 	return nil
 }
+
+func (r *UserRepository) GetDevicesByUser(userID int64) ([]models.Device, error) {
+	query := `SELECT id, name, device_id, user_id, created_at, last_seen_at
+		FROM devices WHERE user_id = ? ORDER BY id`
+	rows, err := r.db.Query(query, userID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var devices []models.Device
+	for rows.Next() {
+		var device models.Device
+		if err := rows.Scan(
+			&device.ID,
+			&device.Name,
+			&device.DeviceID,
+			&device.UserID,
+			&device.CreatedAt,
+			&device.LastSeenAt,
+		); err != nil {
+			return nil, err
+		}
+		devices = append(devices, device)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return devices, nil
+}

@@ -38,11 +38,6 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (c *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
-
-	if helpers.CheckConnection(w, r, 1, "Unauthorized access") {
-		return
-	}
-
 	if r.Method != http.MethodGet {
 		helpers.JSON(w, 405, "Method not allowed")
 		return
