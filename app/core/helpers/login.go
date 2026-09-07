@@ -38,3 +38,28 @@ func Login(email string, password string) bool {
 
 	return SaveTokenFromResponse(resp)
 }
+
+func Logout() bool {
+	req, err := http.NewRequest("POST", "http://localhost:8080/logout", nil)
+	if err != nil {
+		return false
+	}
+
+	token := GetToken()
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "token", Value: token})
+	}
+
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return false
+	}
+
+	ClearToken()
+	return true
+}

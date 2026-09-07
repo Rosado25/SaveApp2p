@@ -32,10 +32,53 @@ func ShowHome(a fyne.App) {
 		usersLabel.SetText(text)
 	})
 
+	devicesLabel := widget.NewLabel("A carregar devices...")
+	loadDevices := func() {
+		devices, err := helpers.GetDevicesByUser()
+		if err != nil {
+			devicesLabel.SetText("Erro ao carregar devices: " + err.Error())
+			return
+		}
+
+		text := ""
+		for _, device := range devices {
+			text += fmt.Sprintf("ID: %v | Nome: %v | DeviceID: %v\n", device["id"], device["name"], device["device_id"])
+		}
+		if text == "" {
+			text = "Nenhum device encontrado"
+		}
+		devicesLabel.SetText(text)
+	}
+
+	loadDevices()
+
+	logoutbouton := widget.NewButton("Logout", func() {
+		if helpers.Logout() {
+			fmt.Println("Logout successful!")
+			w.Close()
+			ShowLogin(a)
+		} else {
+			fmt.Println("Erro ao fazer logout")
+		}
+	})
+
+	closebouton := widget.NewButton("Close", func() {
+		if helpers.Logout() {
+			fmt.Println("Bye Bye!")
+			w.Close()
+		} else {
+			fmt.Println("Erro a fechar a aplicação")
+		}
+	})
+
 	content := container.NewVBox(
 		widget.NewLabel("Home Page"),
+		closebouton,
+		logoutbouton,
 		usersbouton,
 		usersLabel,
+		widget.NewLabel("Devices do utilizador logado:"),
+		devicesLabel,
 	)
 
 	w.SetContent(content)

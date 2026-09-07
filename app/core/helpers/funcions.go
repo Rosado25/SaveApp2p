@@ -33,3 +33,32 @@ func GetUsers() ([]map[string]interface{}, error) {
 
 	return users, nil
 }
+
+func GetDevicesByUser() ([]map[string]interface{}, error) {
+	req, err := http.NewRequest("GET", "http://localhost:8080/GetDevicesByUser", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	token := GetToken()
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "token", Value: token})
+	}
+
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, err
+	}
+
+	var devices []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&devices); err != nil {
+		return nil, err
+	}
+
+	return devices, nil
+}
