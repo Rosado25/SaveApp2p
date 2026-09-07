@@ -4,6 +4,12 @@ import (
 	"Server/models"
 	"database/sql"
 	"errors"
+	"strings"
+)
+
+var (
+	ErrDeviceAlreadyExists = errors.New("device already exists")
+	ErrUserNotFound        = errors.New("user not found")
 )
 
 type UserRepository struct {
@@ -71,4 +77,36 @@ func (r *UserRepository) GetUserByEmail(email string) (models.User, error) {
 		return models.User{}, err
 	}
 	return user, nil
+}
+
+func (r *UserRepository) CreateDevice(device *models.Device) error {
+	var userExists int
+	if err := r.db.QueryRow(`SELECT 1 FROM users WHERE id = ?`, device.UserID).Scan(&userExists); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		return err
+	}
+
+	var deviceExists int
+	if err := r.db.QueryRow(`SELECT 1 FROM devices WHERE device_id = ?`, device.DeviceID).Scan(&deviceExists); err == nil {
+		return ErrDeviceAlreadyExists
+	} else if !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	query := `INSERT INTO devices (name, device_id, user_id) VALUES (?, ?, ?)`
+	result, err := r.db.Exec(query, device.Name, device.DeviceID, device.UserID)
+	if err != nil {
+		if strings.Contains(err.Error(), "UNIQUE constraint failed: devices.device_id") {
+			return ErrDeviceAlreadyExists
+		}
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	if err == nil {
+		device.ID = int(id)
+	}
+	return nil
 }

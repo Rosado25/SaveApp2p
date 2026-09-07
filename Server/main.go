@@ -27,7 +27,10 @@ func main() {
 	authService := services.NewAuthService(userRepo)
 	authController := controllers.NewAuthController(authService)
 
-	routes.RegisterRoutes(userController, authController)
+	deviceService := services.NewDeviceService(userRepo)
+	deviceController := controllers.NewDeviceController(deviceService)
+
+	routes.RegisterRoutes(userController, authController, deviceController)
 
 	fmt.Println("Server is running on port 8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {
