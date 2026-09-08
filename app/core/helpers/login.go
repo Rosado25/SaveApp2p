@@ -29,7 +29,7 @@ func Login(email string, password string) (bool, error) {
 		return false, err
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/login", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", apiURL("/login"), bytes.NewBuffer(body))
 	if err != nil {
 		return false, err
 	}
@@ -58,7 +58,7 @@ func Login(email string, password string) (bool, error) {
 }
 
 func Logout() bool {
-	req, err := http.NewRequest("POST", "http://localhost:8080/logout", nil)
+	req, err := http.NewRequest("POST", apiURL("/logout"), nil)
 	if err != nil {
 		return false
 	}
@@ -95,7 +95,7 @@ func Register(email string, password string) bool {
 		return false
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/CreateUser", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", apiURL("/CreateUser"), bytes.NewBuffer(body))
 	if err != nil {
 		return false
 	}

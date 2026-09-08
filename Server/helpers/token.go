@@ -8,7 +8,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-var secretKey = []byte("your_secret_key") // Replace with your own
+var secretKey = []byte(jwtSecret())
 
 func GenerateJWT(userID int64) (string, error) {
 

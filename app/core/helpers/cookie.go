@@ -64,7 +64,7 @@ func ValidateToken() (string, error) {
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/CheckToken", bytes.NewBuffer(body))
+	req, err := http.NewRequest("POST", apiURL("/CheckToken"), bytes.NewBuffer(body))
 	if err != nil {
 		return "", err
 	}

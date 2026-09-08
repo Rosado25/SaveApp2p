@@ -65,7 +65,7 @@ func CreateDevice(name string) (string, error) {
 		return "", err
 	}
 
-	req, err := http.NewRequest("POST", "http://localhost:8080/CreateDevice", bytes.NewReader(requestBody))
+	req, err := http.NewRequest("POST", apiURL("/CreateDevice"), bytes.NewReader(requestBody))
 	if err != nil {
 		return "", err
 	}

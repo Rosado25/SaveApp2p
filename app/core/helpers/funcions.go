@@ -6,7 +6,7 @@ import (
 )
 
 func GetUsers() ([]map[string]interface{}, error) {
-	req, err := http.NewRequest("GET", "http://localhost:8080/GetUsers", nil)
+	req, err := http.NewRequest("GET", apiURL("/GetUsers"), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func GetUsers() ([]map[string]interface{}, error) {
 }
 
 func GetDevicesByUser() ([]map[string]interface{}, error) {
-	req, err := http.NewRequest("GET", "http://localhost:8080/GetDevicesByUser", nil)
+	req, err := http.NewRequest("GET", apiURL("/GetDevicesByUser"), nil)
 	if err != nil {
 		return nil, err
 	}
