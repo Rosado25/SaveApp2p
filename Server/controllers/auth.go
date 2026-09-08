@@ -29,12 +29,13 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 	var credentials struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
+		DeviceID string `json:"device_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&credentials); err != nil {
 		helpers.JSON(w, 400, "Invalid request payload")
 		return
 	}
-	if err := c.service.Login(w, credentials.Email, credentials.Password); err != nil {
+	if err := c.service.Login(w, credentials.Email, credentials.Password, credentials.DeviceID); err != nil {
 		helpers.JSON(w, 401, "Invalid credentials")
 		return
 	}

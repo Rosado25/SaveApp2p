@@ -2,6 +2,8 @@ package helpers
 
 import (
 	"context"
+	"crypto/rand"
+	"fmt"
 	"net/http"
 )
 
@@ -41,4 +43,22 @@ func HasValidSession(r *http.Request) bool {
 
 	_, err = ValidateJWT(token)
 	return err == nil
+}
+
+func GenerateDeviceID() (string, error) {
+	b := make([]byte, 16)
+
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf(
+		"%x-%x-%x-%x-%x",
+		b[0:4],
+		b[4:6],
+		b[6:8],
+		b[8:10],
+		b[10:16],
+	), nil
 }

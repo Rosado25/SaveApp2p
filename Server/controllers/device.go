@@ -25,11 +25,16 @@ func (c *DeviceController) CreateDevice(w http.ResponseWriter, r *http.Request) 
 	}
 
 	var request struct {
-		Name     string `json:"name"`
-		DeviceID string `json:"device_id"`
+		Name string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		helpers.JSON(w, 400, "Invalid request payload")
+		return
+	}
+
+	DeviceID, err := helpers.GenerateDeviceID()
+	if err != nil {
+		helpers.JSON(w, 500, "Failed to generate device ID")
 		return
 	}
 
@@ -41,7 +46,7 @@ func (c *DeviceController) CreateDevice(w http.ResponseWriter, r *http.Request) 
 
 	device := models.Device{
 		Name:     request.Name,
-		DeviceID: request.DeviceID,
+		DeviceID: DeviceID,
 		UserID:   userID,
 	}
 	if err := c.service.CreateDevice(&device); err != nil {

@@ -141,3 +141,30 @@ func (r *UserRepository) GetDevicesByUser(userID int64) ([]models.Device, error)
 	}
 	return devices, nil
 }
+
+func (r *UserRepository) DeviceBelongsToUser(userID int64, deviceID string) (bool, error) {
+	var exists int
+	err := r.db.QueryRow(
+		`SELECT 1 FROM devices WHERE user_id = ? AND device_id = ?`,
+		userID,
+		deviceID,
+	).Scan(&exists)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+
+	_, err = r.db.Exec(
+		`UPDATE devices SET last_seen_at = CURRENT_TIMESTAMP WHERE user_id = ? AND device_id = ?`,
+		userID,
+		deviceID,
+	)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}

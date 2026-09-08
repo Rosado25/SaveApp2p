@@ -33,15 +33,27 @@ func ShowHome(a fyne.App) {
 	})
 
 	devicesLabel := widget.NewLabel("A carregar devices...")
+	currentDeviceLabel := widget.NewLabel("Device em login: a carregar...")
 	loadDevices := func() {
 		devices, err := helpers.GetDevicesByUser()
 		if err != nil {
 			devicesLabel.SetText("Erro ao carregar devices: " + err.Error())
+			currentDeviceLabel.SetText("Device em login: indisponível")
 			return
+		}
+
+		currentDeviceID, err := helpers.GetDeviceID()
+		if err != nil || currentDeviceID == "" {
+			currentDeviceLabel.SetText("Device em login: desconhecido")
+		} else {
+			currentDeviceLabel.SetText("Device em login: " + currentDeviceID)
 		}
 
 		text := ""
 		for _, device := range devices {
+			if device["device_id"] == currentDeviceID {
+				currentDeviceLabel.SetText(fmt.Sprintf("Device em login: %v (%v)", device["name"], currentDeviceID))
+			}
 			text += fmt.Sprintf("ID: %v | Nome: %v | DeviceID: %v\n", device["id"], device["name"], device["device_id"])
 		}
 		if text == "" {
@@ -73,6 +85,7 @@ func ShowHome(a fyne.App) {
 
 	content := container.NewVBox(
 		widget.NewLabel("Home Page"),
+		currentDeviceLabel,
 		closebouton,
 		logoutbouton,
 		usersbouton,

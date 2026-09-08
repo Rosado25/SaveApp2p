@@ -34,6 +34,8 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Never return the password, even though the service stores its hash.
+	user.Password = ""
 	helpers.JSON(w, 201, user)
 }
 

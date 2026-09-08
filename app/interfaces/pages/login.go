@@ -2,6 +2,7 @@ package pages
 
 import (
 	"app/core/helpers"
+	"errors"
 	"fmt"
 
 	"fyne.io/fyne/v2"
@@ -23,13 +24,23 @@ func ShowLogin(a fyne.App) {
 		fmt.Println("Email:", email.Text)
 		fmt.Println("Password:", password.Text)
 
-		if helpers.Login(email.Text, password.Text) {
+		loggedIn, err := helpers.Login(email.Text, password.Text)
+		if loggedIn {
 			fmt.Println("Login successful!")
 			w.Close()
+			if errors.Is(err, helpers.ErrDeviceSetupRequired) {
+				ShowCreateDevice(a)
+				return
+			}
 			ShowHome(a)
 		} else {
-			fmt.Println("Login failed!")
+			fmt.Println("Login failed:", err)
 		}
+	})
+
+	registerButton := widget.NewButton("Create account", func() {
+		w.Close()
+		ShowRegister(a)
 	})
 
 	form := container.NewVBox(
@@ -37,6 +48,7 @@ func ShowLogin(a fyne.App) {
 		email,
 		password,
 		loginButton,
+		registerButton,
 	)
 
 	w.SetContent(form)
