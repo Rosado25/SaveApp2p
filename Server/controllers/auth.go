@@ -5,6 +5,7 @@ import (
 	"Server/services"
 	"encoding/json"
 	"net/http"
+	"strings"
 )
 
 type AuthController struct {
@@ -26,6 +27,14 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 		helpers.JSON(w, 405, "Method not allowed")
 		return
 	}
+	client := helpers.ClientAddress(r)
+	if !helpers.AllowLogin(client) {
+		w.Header().Set("Retry-After", "900")
+		helpers.JSON(w, http.StatusTooManyRequests, "Too many login attempts")
+		return
+	}
+
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 	var credentials struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -35,10 +44,19 @@ func (c *AuthController) Login(w http.ResponseWriter, r *http.Request) {
 		helpers.JSON(w, 400, "Invalid request payload")
 		return
 	}
+	credentials.Email = strings.TrimSpace(credentials.Email)
+	credentials.DeviceID = strings.TrimSpace(credentials.DeviceID)
+	if credentials.Email == "" || len(credentials.Email) > 320 || credentials.Password == "" || len(credentials.Password) > 1024 || len(credentials.DeviceID) > 128 {
+		helpers.RecordLoginFailure(client)
+		helpers.JSON(w, http.StatusUnauthorized, "Invalid credentials")
+		return
+	}
 	if err := c.service.Login(w, credentials.Email, credentials.Password, credentials.DeviceID); err != nil {
+		helpers.RecordLoginFailure(client)
 		helpers.JSON(w, 401, "Invalid credentials")
 		return
 	}
+	helpers.ResetLoginFailures(client)
 
 	helpers.JSON(w, 200, "Login successful")
 }

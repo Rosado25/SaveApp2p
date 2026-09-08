@@ -5,6 +5,7 @@ import (
 	"Server/models"
 	"Server/repositories"
 	"errors"
+	"strings"
 )
 
 type UserService struct {
@@ -16,11 +17,22 @@ func NewUserService(r *repositories.UserRepository) *UserService {
 }
 
 func (s *UserService) CreateUser(user models.User) error {
+	user.Email = strings.TrimSpace(user.Email)
+	user.Name = strings.TrimSpace(user.Name)
 	if user.Email == "" {
 		return errors.New("email is required")
 	}
 	if user.Password == "" {
 		return errors.New("password is required")
+	}
+	if len(user.Email) > 320 {
+		return errors.New("email is too long")
+	}
+	if len(user.Password) > 1024 {
+		return errors.New("password is too long")
+	}
+	if len(user.Name) > 100 {
+		return errors.New("name is too long")
 	}
 
 	passwordHash := helpers.HashPassword(user.Password)

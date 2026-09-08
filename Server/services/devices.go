@@ -4,6 +4,7 @@ import (
 	"Server/models"
 	"Server/repositories"
 	"errors"
+	"strings"
 )
 
 type DeviceService struct {
@@ -15,8 +16,12 @@ func NewDeviceService(r *repositories.UserRepository) *DeviceService {
 }
 
 func (s *DeviceService) CreateDevice(device *models.Device) error {
+	device.Name = strings.TrimSpace(device.Name)
 	if device.Name == "" {
 		return errors.New("device name is required")
+	}
+	if len(device.Name) > 100 {
+		return errors.New("device name is too long")
 	}
 	if device.DeviceID == "" {
 		return errors.New("device id is required")

@@ -2,7 +2,10 @@ package helpers
 
 import (
 	"errors"
+	"math"
 	"net/http"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -29,6 +32,7 @@ func SetTokenCookie(w http.ResponseWriter, token string) {
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
+		Secure:   cookieSecure(),
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 }
@@ -37,7 +41,7 @@ func ValidateJWT(tokenString string) (int64, error) {
 
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if token.Method != jwt.SigningMethodHS256 {
 			return nil, errors.New("invalid signing method")
 		}
 
@@ -57,9 +61,12 @@ func ValidateJWT(tokenString string) (int64, error) {
 		return 0, errors.New("invalid claims")
 	}
 
-	userID := int64(claims["userID"].(float64))
+	userIDValue, ok := claims["userID"].(float64)
+	if !ok || userIDValue <= 0 || userIDValue != math.Trunc(userIDValue) {
+		return 0, errors.New("invalid user id claim")
+	}
 
-	return userID, nil
+	return int64(userIDValue), nil
 }
 
 func GetTokenFromCookie(r *http.Request) (string, error) {
@@ -77,6 +84,13 @@ func ClearTokenCookie(w http.ResponseWriter) {
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteLaxMode,
+		Secure:   cookieSecure(),
 		Expires:  time.Unix(0, 0),
 	})
+}
+
+func cookieSecure() bool {
+	loadDotEnv()
+	secure, _ := strconv.ParseBool(os.Getenv("COOKIE_SECURE"))
+	return secure
 }

@@ -23,6 +23,7 @@ func (c *DeviceController) CreateDevice(w http.ResponseWriter, r *http.Request) 
 		helpers.JSON(w, 405, "Method not allowed")
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 1024)
 
 	var request struct {
 		Name string `json:"name"`

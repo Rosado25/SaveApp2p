@@ -22,6 +22,7 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 		helpers.JSON(w, 405, "Method not allowed")
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 4096)
 
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
@@ -50,6 +51,9 @@ func (c *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
 		helpers.JSON(w, 500, err.Error())
 		return
 	}
+	for i := range response {
+		response[i].Password = ""
+	}
 
 	helpers.JSON(w, 200, response)
 }
@@ -71,6 +75,7 @@ func (c *UserController) GetUserByID(w http.ResponseWriter, r *http.Request) {
 		helpers.JSON(w, 500, err.Error())
 		return
 	}
+	response.Password = ""
 
 	helpers.JSON(w, 200, response)
 }
@@ -92,6 +97,7 @@ func (c *UserController) GetUserByEmail(w http.ResponseWriter, r *http.Request) 
 		helpers.JSON(w, 500, err.Error())
 		return
 	}
+	response.Password = ""
 
 	helpers.JSON(w, 200, response)
 }
