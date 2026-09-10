@@ -29,8 +29,9 @@ func main() {
 
 	deviceService := services.NewDeviceService(userRepo)
 	deviceController := controllers.NewDeviceController(deviceService)
+	webSocketController := controllers.NewWebSocketController(deviceService, controllers.NewConnectionHub())
 
-	routes.RegisterRoutes(userController, authController, deviceController)
+	routes.RegisterRoutes(userController, authController, deviceController, webSocketController)
 
 	fmt.Println("Server is running on port 8080")
 	if err := http.ListenAndServe(":8080", nil); err != nil {

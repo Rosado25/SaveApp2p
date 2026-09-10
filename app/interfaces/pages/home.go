@@ -10,6 +10,9 @@ import (
 )
 
 func ShowHome(a fyne.App) {
+	if err := helpers.StartWebSocket(); err != nil {
+		fmt.Println("WebSocket could not be started:", err)
+	}
 	w := a.NewWindow("Home")
 	w.Resize(fyne.NewSize(400, 250))
 

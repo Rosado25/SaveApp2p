@@ -29,6 +29,9 @@ func ShowCreateDevice(a fyne.App) {
 		}
 
 		fmt.Println("Device created:", name.Text)
+		if err := helpers.StartWebSocket(); err != nil {
+			fmt.Println("WebSocket could not be started:", err)
+		}
 		w.Close()
 		ShowHome(a)
 	})

@@ -78,6 +78,7 @@ func Logout() bool {
 		return false
 	}
 
+	StopWebSocket()
 	ClearToken()
 	return true
 }

@@ -36,3 +36,9 @@ func (s *DeviceService) CreateDevice(device *models.Device) error {
 func (s *DeviceService) GetDevicesByUser(userID int64) ([]models.Device, error) {
 	return s.repo.GetDevicesByUser(userID)
 }
+
+// DeviceBelongsToUser verifies the device identity presented when opening a
+// persistent connection. It also records that the device was recently seen.
+func (s *DeviceService) DeviceBelongsToUser(userID int64, deviceID string) (bool, error) {
+	return s.repo.DeviceBelongsToUser(userID, deviceID)
+}
