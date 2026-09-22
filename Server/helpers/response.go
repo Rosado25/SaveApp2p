@@ -10,3 +10,9 @@ func JSON(w http.ResponseWriter, status int, data any) {
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(data)
 }
+
+func StringToInt64(s string) (int64, error) {
+	var i int64
+	err := json.Unmarshal([]byte(s), &i)
+	return i, err
+}

@@ -106,3 +106,30 @@ func (c *DeviceController) GetDeviceByID(w http.ResponseWriter, r *http.Request)
 
 	helpers.JSON(w, http.StatusOK, device)
 }
+
+func (c *DeviceController) DevicesFromUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		helpers.JSON(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		helpers.JSON(w, http.StatusBadRequest, "user_id is required")
+		return
+	}
+
+	userIDInt, err := helpers.StringToInt64(userID)
+	if err != nil {
+		helpers.JSON(w, http.StatusBadRequest, "Invalid user_id")
+		return
+	}
+
+	devices, err := c.service.GetDevicesFromUser(userIDInt)
+	if err != nil {
+		helpers.JSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	helpers.JSON(w, http.StatusOK, devices)
+}
