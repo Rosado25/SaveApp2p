@@ -42,3 +42,7 @@ func (s *DeviceService) GetDevicesByUser(userID int64) ([]models.Device, error) 
 func (s *DeviceService) DeviceBelongsToUser(userID int64, deviceID string) (bool, error) {
 	return s.repo.DeviceBelongsToUser(userID, deviceID)
 }
+
+func (s *DeviceService) GetDeviceByID(deviceID string) (*models.Device, error) {
+	return s.repo.GetDeviceByID(deviceID)
+}

@@ -168,3 +168,25 @@ func (r *UserRepository) DeviceBelongsToUser(userID int64, deviceID string) (boo
 
 	return true, nil
 }
+
+func (r *UserRepository) GetDeviceByID(deviceID string) (*models.Device, error) {
+	query := `SELECT id, name, device_id, user_id, created_at, last_seen_at FROM devices WHERE device_id = ?`
+	row := r.db.QueryRow(query, deviceID)
+
+	var device models.Device
+	if err := row.Scan(
+		&device.ID,
+		&device.Name,
+		&device.DeviceID,
+		&device.UserID,
+		&device.CreatedAt,
+		&device.LastSeenAt,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errors.New("device not found")
+		}
+		return nil, err
+	}
+
+	return &device, nil
+}
