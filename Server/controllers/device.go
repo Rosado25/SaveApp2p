@@ -92,7 +92,7 @@ func (c *DeviceController) GetDeviceByID(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	deviceID := r.URL.Query().Get("device_id")
+	deviceID := r.URL.Query().Get("id")
 	if deviceID == "" {
 		helpers.JSON(w, http.StatusBadRequest, "device_id is required")
 		return

@@ -170,7 +170,7 @@ func (r *UserRepository) DeviceBelongsToUser(userID int64, deviceID string) (boo
 }
 
 func (r *UserRepository) GetDeviceByID(deviceID string) (*models.Device, error) {
-	query := `SELECT id, name, device_id, user_id, created_at, last_seen_at FROM devices WHERE device_id = ?`
+	query := `SELECT id, name, device_id, user_id, created_at, last_seen_at FROM devices WHERE id = ?`
 	row := r.db.QueryRow(query, deviceID)
 
 	var device models.Device
