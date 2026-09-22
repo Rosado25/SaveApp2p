@@ -9,9 +9,9 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func ShowCreateDevice(a fyne.App) {
-	w := a.NewWindow("Create Device")
-	w.Resize(fyne.NewSize(400, 300))
+func ShowCreateDevice(w fyne.Window, a fyne.App) {
+
+	w.SetTitle("Create Device")
 
 	name := widget.NewEntry()
 	name.SetPlaceHolder("Device name, e.g. Office PC")
@@ -32,8 +32,7 @@ func ShowCreateDevice(a fyne.App) {
 		if err := helpers.StartWebSocket(); err != nil {
 			fmt.Println("WebSocket could not be started:", err)
 		}
-		w.Close()
-		ShowHome(a)
+		ShowHome(w, a)
 	})
 
 	w.SetContent(container.NewVBox(

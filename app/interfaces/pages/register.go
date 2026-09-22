@@ -9,9 +9,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func ShowRegister(a fyne.App) {
-	w := a.NewWindow("Register")
-	w.Resize(fyne.NewSize(400, 300))
+func ShowRegister(w fyne.Window ,a fyne.App) {
+	w.SetTitle("Register")
 
 	email := widget.NewEntry()
 	email.SetPlaceHolder("Enter your email")
@@ -26,8 +25,7 @@ func ShowRegister(a fyne.App) {
 
 		if helpers.Register(email.Text, password.Text) {
 			fmt.Println("Register successful!")
-			w.Close()
-			ShowLogin(a)
+			ShowLogin(w, a)
 		} else {
 			fmt.Println("Register failed!")
 			status.SetText("Registration failed. Check the data or email.")
@@ -35,8 +33,7 @@ func ShowRegister(a fyne.App) {
 	})
 
 	gobackButton := widget.NewButton("Go back", func() {
-		w.Close()
-		ShowLogin(a)
+		ShowLogin(w, a)
 	})
 
 	form := container.NewVBox(

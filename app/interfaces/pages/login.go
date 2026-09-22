@@ -10,9 +10,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func ShowLogin(a fyne.App) {
-	w := a.NewWindow("Login")
-	w.Resize(fyne.NewSize(400, 250))
+func ShowLogin(w fyne.Window, a fyne.App) {
+	w.SetTitle("Login")
 
 	email := widget.NewEntry()
 	email.SetPlaceHolder("Enter your email")
@@ -27,20 +26,18 @@ func ShowLogin(a fyne.App) {
 		loggedIn, err := helpers.Login(email.Text, password.Text)
 		if loggedIn {
 			fmt.Println("Login successful!")
-			w.Close()
 			if errors.Is(err, helpers.ErrDeviceSetupRequired) {
-				ShowCreateDevice(a)
+				ShowCreateDevice(w, a)
 				return
 			}
-			ShowHome(a)
+			ShowHome(w, a)
 		} else {
 			fmt.Println("Login failed:", err)
 		}
 	})
 
 	registerButton := widget.NewButton("Create account", func() {
-		w.Close()
-		ShowRegister(a)
+		ShowRegister(w, a)
 	})
 
 	form := container.NewVBox(

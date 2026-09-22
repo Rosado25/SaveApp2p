@@ -62,3 +62,33 @@ func GetDevicesByUser() ([]map[string]interface{}, error) {
 
 	return devices, nil
 }
+
+
+func GetUserByID(userID string) (map[string]interface{}, error) {
+	req, err := http.NewRequest("GET", apiURL("/GetUserByID?id="+userID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	token := GetToken()
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "token", Value: token})
+	}
+
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, err
+	}
+
+	var user map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

@@ -48,6 +48,7 @@ func StopWebSocket() {
 	socketSession.cancel = nil
 	socketSession.Unlock()
 	if cancel != nil {
+		log.Println("Stopping WebSocket...")
 		cancel()
 	}
 }
