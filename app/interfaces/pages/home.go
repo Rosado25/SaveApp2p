@@ -18,12 +18,11 @@ func ShowHome(w fyne.Window, a fyne.App) {
 
 	w.SetTitle("Home")
 
-	devicesLabel := widget.NewLabel("A carregar devices...")
 	currentDeviceLabel := widget.NewLabel("Device em login: a carregar...")
+	var devices2 []fyne.CanvasObject
 	loadDevices := func() {
 		devices, err := helpers.GetDevicesByUser()
 		if err != nil {
-			devicesLabel.SetText("Erro ao carregar devices: " + err.Error())
 			currentDeviceLabel.SetText("Device em login: indisponível")
 			return
 		}
@@ -31,21 +30,26 @@ func ShowHome(w fyne.Window, a fyne.App) {
 		currentDeviceID, err := helpers.GetDeviceID()
 		if err != nil || currentDeviceID == "" {
 			currentDeviceLabel.SetText("Device em login: desconhecido")
-		} else {
-			currentDeviceLabel.SetText("Device em login: " + currentDeviceID)
 		}
 
-		text := ""
 		for _, device := range devices {
 			if device["device_id"] == currentDeviceID {
-				currentDeviceLabel.SetText(fmt.Sprintf("Device em login: %v (%v)", device["name"], currentDeviceID))
+				currentDeviceLabel.SetText(fmt.Sprintf("Device em login: %v ", device["name"]))
 			}
-			text += fmt.Sprintf("ID: %v | Nome: %v | DeviceID: %v\n", device["id"], device["name"], device["device_id"])
+			deviceLabel := widget.NewButton(
+				fmt.Sprintf(
+					"ID: %v\n Nome: %v\n",
+					device["id"],
+					device["name"],
+				), func() {},
+			)
+
+			devices2 = append(devices2, deviceLabel)
 		}
-		if text == "" {
-			text = "Nenhum device encontrado"
+
+		if len(devices2) == 0 {
+			devices2 = append(devices2, widget.NewLabel("Nenhum device encontrado"))
 		}
-		devicesLabel.SetText(text)
 	}
 
 	loadDevices()
@@ -53,7 +57,7 @@ func ShowHome(w fyne.Window, a fyne.App) {
 	logoutbouton := widget.NewButton("Logout", func() {
 		if helpers.Logout() {
 			fmt.Println("Logout successful!")
-			ShowLogin(w,a)
+			ShowLogin(w, a)
 		} else {
 			fmt.Println("Erro ao fazer logout")
 		}
@@ -77,7 +81,10 @@ func ShowHome(w fyne.Window, a fyne.App) {
 
 	bottom := container.NewVBox(
 		widget.NewLabel("Devices do utilizador logado:"),
-		devicesLabel,
+		container.New(
+			layout.NewAdaptiveGridLayout(5),
+			devices2...,
+		),
 	)
 
 	content := container.New(
