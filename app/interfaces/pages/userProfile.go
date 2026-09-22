@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -17,6 +18,32 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		fmt.Println("Erro ao carregar utilizador:", err)
 		w.SetContent(widget.NewLabel("Erro ao carregar utilizador: " + err.Error()))
 		return
+	}
+
+	devices, err := helpers.GetDevicesFromUser(userID)
+	if err != nil {
+		fmt.Println("Erro ao carregar devices do utilizador:", err)
+		w.SetContent(widget.NewLabel("Erro ao carregar devices do utilizador: " + err.Error()))
+		return
+	}
+
+	var devices2 []fyne.CanvasObject
+
+	for _, device := range devices {
+		deviceLabel := widget.NewButton(
+			fmt.Sprintf(
+				"ID: %v\n Nome: %v\n LastSeenAt: %v\n",
+				device["id"],
+				device["name"],
+				device["last_seen_at"],
+			), func() {},
+		)
+
+		devices2 = append(devices2, deviceLabel)
+	}
+
+	if len(devices2) == 0 {
+		devices2 = append(devices2, widget.NewLabel("Nenhum device encontrado"))
 	}
 
 	userInfo := fmt.Sprintf(
@@ -32,7 +59,14 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		ShowSearchUsers(w, a)
 	})
 
-	content := container.NewVBox(gobackButton, userLabel)
+	content := container.NewVBox(
+		gobackButton,
+		userLabel,
+		container.New(
+			layout.NewAdaptiveGridLayout(5),
+			devices2...,
+		),
+	)
 	w.SetContent(content)
 	w.Show()
 }

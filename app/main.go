@@ -4,9 +4,10 @@ import (
 	"app/interfaces/pages"
 	"fmt"
 
+	"app/core/helpers"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
-	"app/core/helpers"
 )
 
 func main() {
@@ -14,7 +15,7 @@ func main() {
 	fmt.Println("App module is running")
 
 	w := a.NewWindow("SaveApp")
-	w.Resize(fyne.NewSize(500, 400))
+	w.Resize(fyne.NewSize(750, 600))
 
 	pages.ShowLogin(w, a)
 

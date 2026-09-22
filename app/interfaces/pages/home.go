@@ -41,7 +41,10 @@ func ShowHome(w fyne.Window, a fyne.App) {
 					"ID: %v\n Nome: %v\n",
 					device["id"],
 					device["name"],
-				), func() {},
+				), func() {
+					id := fmt.Sprintf("%v", device["id"])
+					ShowDevice(w, a, id)
+				},
 			)
 
 			devices2 = append(devices2, deviceLabel)
