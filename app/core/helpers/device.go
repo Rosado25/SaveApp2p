@@ -94,3 +94,11 @@ func CreateDevice(name string) (string, error) {
 
 	return device.DeviceID, nil
 }
+
+func SendTestMessage(targetDeviceID string, message string) error {
+	return SendWebSocketMessage(
+		targetDeviceID,
+		"test",
+		message,
+	)
+}
