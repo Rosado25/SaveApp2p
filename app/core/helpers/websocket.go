@@ -65,22 +65,45 @@ func StopWebSocket() {
 
 func runWebSocket(ctx context.Context, deviceID string) {
 	backoff := time.Second
+
 	for ctx.Err() == nil {
+		log.Println("Tentando conectar WebSocket...")
+
 		conn, err := dialWebSocket(ctx, deviceID)
 		if err == nil {
+			log.Println("WebSocket conectado!")
+
+			socketSession.Lock()
+			socketSession.conn = conn
+			socketSession.Unlock()
+
 			backoff = time.Second
+
 			err = keepWebSocketAlive(ctx, conn)
+
+			socketSession.Lock()
+			socketSession.conn = nil
+			socketSession.Unlock()
+
 			_ = conn.Close(websocket.StatusNormalClosure, "client stopped")
 		}
+
 		if ctx.Err() != nil {
 			return
 		}
-		log.Printf("WebSocket disconnected: %v; reconnecting in %s", err, backoff)
+
+		log.Printf(
+			"WebSocket disconnected: %v; reconnecting in %s",
+			err,
+			backoff,
+		)
+
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(backoff):
 		}
+
 		if backoff < 30*time.Second {
 			backoff *= 2
 		}
