@@ -30,13 +30,28 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 	var devices2 []fyne.CanvasObject
 
 	for _, device := range devices {
+		deviceID := fmt.Sprintf("%v", device["id"])
+
 		deviceLabel := widget.NewButton(
 			fmt.Sprintf(
 				"ID: %v\n Nome: %v\n LastSeenAt: %v\n",
 				device["id"],
 				device["name"],
 				device["last_seen_at"],
-			), func() {},
+			),
+			func() {
+				err := helpers.SendTestMessage(
+					deviceID,
+					"Olá! Mensagem de teste.",
+				)
+
+				if err != nil {
+					fmt.Println("Erro ao enviar mensagem:", err)
+					return
+				}
+
+				fmt.Println("Mensagem de teste enviada!")
+			},
 		)
 
 		devices2 = append(devices2, deviceLabel)
@@ -67,6 +82,7 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 			devices2...,
 		),
 	)
+
 	w.SetContent(content)
 	w.Show()
 }
