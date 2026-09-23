@@ -29,7 +29,12 @@ func main() {
 
 	deviceService := services.NewDeviceService(userRepo)
 	deviceController := controllers.NewDeviceController(deviceService)
-	webSocketController := controllers.NewWebSocketController(deviceService, controllers.NewConnectionHub())
+	connectionHub := controllers.NewConnectionHub()
+
+	webSocketController := controllers.NewWebSocketController(
+		deviceService,
+		connectionHub,
+	)
 
 	routes.RegisterRoutes(userController, authController, deviceController, webSocketController)
 

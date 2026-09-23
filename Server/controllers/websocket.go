@@ -4,6 +4,7 @@ import (
 	"Server/helpers"
 	"Server/services"
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 	"sync"
@@ -102,8 +103,44 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 	defer c.hub.remove(deviceID, conn)
 
 	for {
-		if _, _, err := conn.Read(r.Context()); err != nil {
+		_, message, err := conn.Read(r.Context())
+		if err != nil {
 			return
 		}
+
+		var wsMessage WebSocketMessage
+
+		if err := json.Unmarshal(message, &wsMessage); err != nil {
+			continue
+		}
+
+		if wsMessage.TargetDeviceID == "" {
+			continue
+		}
+
+		targetDevice, err := c.devices.GetDeviceByID(wsMessage.TargetDeviceID)
+		if err != nil {
+			continue
+		}
+
+		wsMessage.SenderDeviceID = deviceID
+
+		message, err = json.Marshal(wsMessage)
+		if err != nil {
+			continue
+		}
+
+		c.hub.SendToDevice(
+			r.Context(),
+			targetDevice.DeviceID,
+			message,
+		)
 	}
+}
+
+type WebSocketMessage struct {
+	Type           string `json:"type"`
+	TargetDeviceID string `json:"targetDeviceID"`
+	SenderDeviceID string `json:"senderDeviceID"`
+	Data           any    `json:"data"`
 }
