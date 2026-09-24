@@ -30,21 +30,11 @@ func ShowDevice(w fyne.Window, a fyne.App, deviceID string) {
 
 	deviceLabel := widget.NewLabel(devicInfo)
 
-	testButton := widget.NewButton("Test WebSocket", func() {
-		err := helpers.SendMessage(deviceID, "Olá! Mensagem de teste.")
-		if err != nil {
-			fmt.Println("Erro ao enviar mensagem:", err)
-			return
-		}
-
-		fmt.Println("Mensagem de teste enviada!")
-	})
-
 	gobackButton := widget.NewButton("Go back", func() {
 		ShowHome(w, a)
 	})
 
-	content := container.NewVBox(gobackButton, deviceLabel, testButton)
+	content := container.NewVBox(gobackButton, deviceLabel)
 	w.SetContent(content)
 	w.Show()
 }
