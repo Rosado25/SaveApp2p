@@ -11,4 +11,5 @@ func DeviceRoutes(controller *controllers.DeviceController) {
 	http.Handle("/GetDevicesByUser", helpers.RequireAuth(http.HandlerFunc(controller.GetDevicesByUser)))
 	http.Handle("/GetDeviceByID", helpers.RequireAuth(http.HandlerFunc(controller.GetDeviceByID)))
 	http.Handle("/DevicesFromUser", helpers.RequireAuth(http.HandlerFunc(controller.DevicesFromUser)))
+	http.Handle("/DeviceIdToName", helpers.RequireAuth(http.HandlerFunc(controller.DeviceIdToName)))
 }

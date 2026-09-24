@@ -78,9 +78,6 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 				if name == selected {
 					selectedDeviceID = deviceIDs[i]
 
-					// Limpar conversa anterior
-					messageDisplay.SetText("")
-
 					fmt.Println(
 						"Device selecionado:",
 						selectedDeviceID,
@@ -100,16 +97,10 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 
 	helpers.SetChatMessageHandler(func(message helpers.WebSocketMessage) {
 
-		// Procurar o device que enviou a mensagem
-		senderName := "Device desconhecido"
-
-		for _, device := range devices {
-			deviceWebSocketID := fmt.Sprintf("%v", device["device_id"])
-
-			if deviceWebSocketID == message.SenderDeviceID {
-				senderName = fmt.Sprintf("%v", device["name"])
-				break
-			}
+		senderName, err := helpers.DeviceIdToName(message.SenderDeviceID)
+		if err != nil {
+			fmt.Println("Erro ao obter nome do device:", err)
+			senderName = "Device desconhecido"
 		}
 
 		receivedMessage := fmt.Sprintf("%v", message.Data)

@@ -50,3 +50,7 @@ func (s *DeviceService) GetDeviceByID(deviceID string) (*models.Device, error) {
 func (s *DeviceService) GetDevicesFromUser(userID int64) ([]models.Device, error) {
 	return s.repo.GetDevicesFromUser(userID)
 }
+
+func (s *DeviceService) DeviceIdToName(deviceID string) (*models.User, error) {
+	return s.repo.DeviceIdToName(deviceID)
+}

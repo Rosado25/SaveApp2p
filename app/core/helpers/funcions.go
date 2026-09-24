@@ -149,3 +149,35 @@ func GetDevicesFromUser(userID string) ([]map[string]interface{}, error) {
 
 	return devices, nil
 }
+
+func DeviceIdToName(deviceID string) (string, error) {
+
+	req, err := http.NewRequest("GET", apiURL("/DeviceIdToName?device_id="+deviceID), nil)
+	if err != nil {
+		return "", err
+	}
+
+	token := GetToken()
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "token", Value: token})
+	}
+
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", err
+	}
+
+	var name string
+
+	if err := json.NewDecoder(resp.Body).Decode(&name); err != nil {
+		return "", err
+	}
+
+	return name, nil
+}
