@@ -99,21 +99,29 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 	// -------------------------
 
 	helpers.SetChatMessageHandler(func(message helpers.WebSocketMessage) {
-		// Só mostrar mensagens do device atualmente selecionado
-		if message.SenderDeviceID != selectedDeviceID {
-			return
+
+		// Procurar o device que enviou a mensagem
+		senderName := "Device desconhecido"
+
+		for _, device := range devices {
+			deviceWebSocketID := fmt.Sprintf("%v", device["device_id"])
+
+			if deviceWebSocketID == message.SenderDeviceID {
+				senderName = fmt.Sprintf("%v", device["name"])
+				break
+			}
 		}
 
 		receivedMessage := fmt.Sprintf("%v", message.Data)
 
 		fyne.Do(func() {
+			newMessage := senderName + ": " + receivedMessage
+
 			if messageDisplay.Text == "" {
-				messageDisplay.SetText(
-					"Device: " + receivedMessage,
-				)
+				messageDisplay.SetText(newMessage)
 			} else {
 				messageDisplay.SetText(
-					messageDisplay.Text + "\nDevice: " + receivedMessage,
+					messageDisplay.Text + "\n" + newMessage,
 				)
 			}
 		})
