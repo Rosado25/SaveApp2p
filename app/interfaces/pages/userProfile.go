@@ -27,39 +27,9 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		return
 	}
 
-	var devices2 []fyne.CanvasObject
-
-	for _, device := range devices {
-		deviceID := fmt.Sprintf("%v", device["id"])
-
-		deviceLabel := widget.NewButton(
-			fmt.Sprintf(
-				"ID: %v\n Nome: %v\n LastSeenAt: %v\n",
-				device["id"],
-				device["name"],
-				device["last_seen_at"],
-			),
-			func() {
-				err := helpers.SendTestMessage(
-					deviceID,
-					"Olá! Mensagem de teste.",
-				)
-
-				if err != nil {
-					fmt.Println("Erro ao enviar mensagem:", err)
-					return
-				}
-
-				fmt.Println("Mensagem de teste enviada!")
-			},
-		)
-
-		devices2 = append(devices2, deviceLabel)
-	}
-
-	if len(devices2) == 0 {
-		devices2 = append(devices2, widget.NewLabel("Nenhum device encontrado"))
-	}
+	// -------------------------
+	// USER INFO
+	// -------------------------
 
 	userInfo := fmt.Sprintf(
 		"ID: %v\nNome: %v\nEmail: %v",
@@ -70,17 +40,199 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 
 	userLabel := widget.NewLabel(userInfo)
 
+	// -------------------------
+	// DEVICE SELECTION
+	// -------------------------
+
+	messageDisplay := widget.NewMultiLineEntry()
+	messageDisplay.SetPlaceHolder("As mensagens aparecerão aqui...")
+	messageDisplay.Disable()
+
+	messageEntry := widget.NewEntry()
+	messageEntry.SetPlaceHolder("Digite sua mensagem aqui...")
+
+	deviceIDs := make([]string, 0, len(devices))
+	deviceNames := make([]string, 0, len(devices))
+
+	for _, device := range devices {
+		deviceID := fmt.Sprintf("%v", device["id"])
+		deviceName := fmt.Sprintf("%v", device["name"])
+
+		deviceIDs = append(deviceIDs, deviceID)
+		deviceNames = append(
+			deviceNames,
+			fmt.Sprintf(
+				"%s (ID: %s)",
+				deviceName,
+				deviceID,
+			),
+		)
+	}
+
+	selectedDeviceID := ""
+
+	deviceSelect := widget.NewSelect(
+		deviceNames,
+		func(selected string) {
+			for i, name := range deviceNames {
+				if name == selected {
+					selectedDeviceID = deviceIDs[i]
+
+					// Limpar conversa anterior
+					messageDisplay.SetText("")
+
+					fmt.Println(
+						"Device selecionado:",
+						selectedDeviceID,
+					)
+
+					break
+				}
+			}
+		},
+	)
+
+	deviceSelect.PlaceHolder = "Selecione um device"
+
+	// -------------------------
+	// MESSAGES
+	// -------------------------
+
+	helpers.SetChatMessageHandler(func(message helpers.WebSocketMessage) {
+		// Só mostrar mensagens do device atualmente selecionado
+		if message.SenderDeviceID != selectedDeviceID {
+			return
+		}
+
+		receivedMessage := fmt.Sprintf("%v", message.Data)
+
+		fyne.Do(func() {
+			if messageDisplay.Text == "" {
+				messageDisplay.SetText(
+					"Device: " + receivedMessage,
+				)
+			} else {
+				messageDisplay.SetText(
+					messageDisplay.Text + "\nDevice: " + receivedMessage,
+				)
+			}
+		})
+	})
+
+	sendButton := widget.NewButton("Enviar", func() {
+		if selectedDeviceID == "" {
+			fmt.Println("Nenhum device selecionado")
+			return
+		}
+
+		message := messageEntry.Text
+
+		if message == "" {
+			return
+		}
+
+		err := helpers.SendMessage(
+			selectedDeviceID,
+			message,
+		)
+
+		if err != nil {
+			fmt.Println("Erro ao enviar mensagem:", err)
+			return
+		}
+
+		if messageDisplay.Text == "" {
+			messageDisplay.SetText(
+				"Você: " + message,
+			)
+		} else {
+			messageDisplay.SetText(
+				messageDisplay.Text + "\nVocê: " + message,
+			)
+		}
+
+		messageEntry.SetText("")
+
+		fmt.Println(
+			"Mensagem enviada para device:",
+			selectedDeviceID,
+		)
+	})
+
+	messageInput := container.NewBorder(
+		nil,
+		nil,
+		nil,
+		sendButton,
+		messageEntry,
+	)
+
+	chat := container.NewBorder(
+		nil,
+		messageInput,
+		nil,
+		nil,
+		messageDisplay,
+	)
+
+	// -------------------------
+	// DEVICES INFO
+	// -------------------------
+
+	var devices2 []fyne.CanvasObject
+
+	for _, device := range devices {
+		deviceLabel := widget.NewLabel(
+			fmt.Sprintf(
+				"ID: %v\nNome: %v\nLastSeenAt: %v",
+				device["id"],
+				device["name"],
+				device["last_seen_at"],
+			),
+		)
+
+		devices2 = append(devices2, deviceLabel)
+	}
+
+	if len(devices2) == 0 {
+		devices2 = append(
+			devices2,
+			widget.NewLabel("Nenhum device encontrado"),
+		)
+	}
+
+	// -------------------------
+	// GO BACK
+	// -------------------------
+
 	gobackButton := widget.NewButton("Go back", func() {
 		ShowSearchUsers(w, a)
 	})
 
+	// -------------------------
+	// CONTENT
+	// -------------------------
+
 	content := container.NewVBox(
 		gobackButton,
+
 		userLabel,
+
+		widget.NewSeparator(),
+
+		widget.NewLabel("Devices:"),
 		container.New(
 			layout.NewAdaptiveGridLayout(5),
 			devices2...,
 		),
+
+		widget.NewSeparator(),
+
+		widget.NewLabel("Enviar mensagem para:"),
+		deviceSelect,
+
+		widget.NewLabel("Mensagens:"),
+		chat,
 	)
 
 	w.SetContent(content)

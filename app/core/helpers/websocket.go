@@ -19,6 +19,12 @@ var socketSession = struct {
 	conn   *websocket.Conn
 }{}
 
+var chatMessageHandler func(WebSocketMessage)
+
+func SetChatMessageHandler(handler func(WebSocketMessage)) {
+	chatMessageHandler = handler
+}
+
 type WebSocketMessage struct {
 	Type           string `json:"type"`
 	TargetDeviceID string `json:"targetDeviceID"`
@@ -205,12 +211,16 @@ func handleWebSocketMessage(message []byte) {
 
 	switch wsMessage.Type {
 
-	case "test":
+	case "chat":
 		log.Printf(
-			"TEST MESSAGE | From: %s | Data: %v",
+			"MESSAGE | From: %s | Data: %v",
 			wsMessage.SenderDeviceID,
 			wsMessage.Data,
 		)
+
+		if chatMessageHandler != nil {
+			chatMessageHandler(wsMessage)
+		}
 
 	case "webrtc_offer":
 		// tratar offer
