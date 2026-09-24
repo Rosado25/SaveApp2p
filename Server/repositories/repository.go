@@ -219,18 +219,16 @@ func (r *UserRepository) GetDevicesFromUser(userID int64) ([]models.Device, erro
 	return devices, nil
 }
 
-// DeviceIdToName retrieves the email of the user associated with the given device ID.
-// Email is used here as a unique identifier for the user, which can be considered as the "name" of the user in this context because i didnt cofigure the database to have a name column in the users table.
-func (r *UserRepository) DeviceIdToName(deviceID string) (*models.User, error) {
-	query := `SELECT email FROM users WHERE id = (SELECT user_id FROM devices WHERE device_id = ?)`
+func (r *UserRepository) DeviceIdToName(deviceID string) (*models.Device, error) {
+	query := `SELECT name FROM devices WHERE device_id = ?`
 	row := r.db.QueryRow(query, deviceID)
 
-	var user models.User
-	if err := row.Scan(&user.Email); err != nil {
+	var device models.Device
+	if err := row.Scan(&device.Name); err != nil {
 		if err == sql.ErrNoRows {
-			return &models.User{}, errors.New("user not found")
+			return &models.Device{}, errors.New("user not found")
 		}
-		return &models.User{}, err
+		return &models.Device{}, err
 	}
-	return &user, nil
+	return &device, nil
 }

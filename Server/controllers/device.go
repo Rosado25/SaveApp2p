@@ -146,12 +146,12 @@ func (c *DeviceController) DeviceIdToName(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	User, err := c.service.DeviceIdToName(deviceID)
+	Device, err := c.service.DeviceIdToName(deviceID)
 	if err != nil {
 		helpers.JSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	response := User.Email
+	response := Device.Name
 	helpers.JSON(w, http.StatusOK, response)
 }
