@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	senderMu          sync.Mutex
-	senderConnection  *webrtc.PeerConnection
-	senderDataChannel *webrtc.DataChannel
+	senderMu                sync.Mutex
+	senderConnection        *webrtc.PeerConnection
+	senderDataChannel       *webrtc.DataChannel
+	senderPendingCandidates []webrtc.ICECandidateInit
 )
 
 // StartWebRTCSender cria uma ligação WebRTC para outro device.
@@ -158,6 +159,14 @@ func HandleWebRTCAnswer(message WebSocketMessage) error {
 		return err
 	}
 
+	for _, candidate := range senderPendingCandidates {
+		if err := senderConnection.AddICECandidate(candidate); err != nil {
+			log.Println("Erro ao adicionar ICE candidate:", err)
+		}
+	}
+
+	senderPendingCandidates = nil
+
 	log.Println("WebRTC Answer recebido!")
 
 	return nil
@@ -181,6 +190,17 @@ func HandleWebRTCICE(message WebSocketMessage) error {
 
 	if err := json.Unmarshal(data, &candidate); err != nil {
 		return err
+	}
+
+	if senderConnection.RemoteDescription() == nil {
+		senderPendingCandidates = append(
+			senderPendingCandidates,
+			candidate,
+		)
+
+		log.Println("ICE candidate guardado para depois")
+
+		return nil
 	}
 
 	return senderConnection.AddICECandidate(candidate)

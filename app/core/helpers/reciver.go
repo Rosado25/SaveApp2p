@@ -10,10 +10,11 @@ import (
 )
 
 var (
-	receiverMu          sync.Mutex
-	receiverConnection  *webrtc.PeerConnection
-	receiverDataChannel *webrtc.DataChannel
-	receiverTargetID    string
+	receiverMu                sync.Mutex
+	receiverConnection        *webrtc.PeerConnection
+	receiverDataChannel       *webrtc.DataChannel
+	receiverTargetID          string
+	receiverPendingCandidates []webrtc.ICECandidateInit
 )
 
 // HandleWebRTCOffer trata um Offer recebido.
@@ -99,6 +100,14 @@ func HandleWebRTCOffer(message WebSocketMessage) error {
 	if err := peerConnection.SetRemoteDescription(offer); err != nil {
 		return err
 	}
+
+	for _, candidate := range receiverPendingCandidates {
+		if err := peerConnection.AddICECandidate(candidate); err != nil {
+			log.Println("Erro ao adicionar ICE candidate:", err)
+		}
+	}
+
+	receiverPendingCandidates = nil
 
 	// Criar Answer.
 	answer, err := peerConnection.CreateAnswer(nil)
