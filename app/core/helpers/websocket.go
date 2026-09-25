@@ -223,13 +223,19 @@ func handleWebSocketMessage(message []byte) {
 		}
 
 	case "webrtc_offer":
-		// tratar offer
+		if err := HandleWebRTCOffer(wsMessage); err != nil {
+			log.Println("Erro ao tratar WebRTC offer:", err)
+		}
 
 	case "webrtc_answer":
-		// tratar answer
+		if err := HandleWebRTCAnswer(wsMessage); err != nil {
+			log.Println("Erro ao tratar WebRTC answer:", err)
+		}
 
 	case "ice_candidate":
-		// tratar ICE candidate
+		if err := HandleWebRTCICE(wsMessage); err != nil {
+			log.Println("Erro ao tratar WebRTC ICE:", err)
+		}
 
 	default:
 		log.Println("Unknown WebSocket message:", wsMessage.Type)
