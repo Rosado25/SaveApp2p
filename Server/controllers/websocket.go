@@ -142,5 +142,6 @@ type WebSocketMessage struct {
 	Type           string `json:"type"`
 	TargetDeviceID string `json:"targetDeviceID"`
 	SenderDeviceID string `json:"senderDeviceID"`
+	Role           string `json:"role"`
 	Data           any    `json:"data"`
 }
