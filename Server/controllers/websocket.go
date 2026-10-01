@@ -181,9 +181,23 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 			len(message),
 		)
 
+		log.Printf(
+			"WS RAW: conn=%s device=%s payload=%s",
+			connID,
+			deviceID,
+			string(message),
+		)
+
 		var wsMessage WebSocketMessage
 
 		if err := json.Unmarshal(message, &wsMessage); err != nil {
+			log.Printf(
+				"WS JSON UNMARSHAL ERRO: conn=%s device=%s err=%v payload=%s",
+				connID,
+				deviceID,
+				err,
+				string(message),
+			)
 			continue
 		}
 
