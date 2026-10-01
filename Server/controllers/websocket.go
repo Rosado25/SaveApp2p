@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"Server/helpers"
+	"Server/models"
 	"Server/services"
 	"context"
 	"encoding/json"
@@ -338,13 +339,29 @@ func (c *WebSocketController) Handle(
 			wsMessage.TargetDeviceID,
 		)
 
-		targetDevice, err := c.devices.GetDeviceByID(
-			wsMessage.TargetDeviceID,
-		)
+		var targetDevice *models.Device
+
+		if strings.Contains(wsMessage.TargetDeviceID, "-") {
+			log.Printf(
+				"WS DEVICE LOOKUP: target parece ser device_id",
+			)
+
+			targetDevice, err = c.devices.GetDeviceByDeviceID(
+				wsMessage.TargetDeviceID,
+			)
+		} else {
+			log.Printf(
+				"WS DEVICE LOOKUP: target parece ser ID da BD",
+			)
+
+			targetDevice, err = c.devices.GetDeviceByID(
+				wsMessage.TargetDeviceID,
+			)
+		}
 
 		if err != nil {
 			log.Printf(
-				"WS ERRO GetDeviceByID: target=%s err=%v",
+				"WS ERRO DEVICE LOOKUP: target=%s err=%v",
 				wsMessage.TargetDeviceID,
 				err,
 			)
