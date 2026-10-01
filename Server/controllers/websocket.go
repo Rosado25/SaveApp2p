@@ -43,14 +43,33 @@ func (h *ConnectionHub) remove(deviceID string, conn *websocket.Conn) {
 
 // SendToDevice is the server-side entry point for future signalling events.
 // It returns false when that device is not currently connected.
-func (h *ConnectionHub) SendToDevice(ctx context.Context, deviceID string, message []byte) bool {
+func (h *ConnectionHub) SendToDevice(
+	ctx context.Context,
+	deviceID string,
+	message []byte,
+) bool {
 	h.mu.RLock()
 	conn := h.connections[deviceID]
 	h.mu.RUnlock()
+
 	if conn == nil {
+		log.Printf("WS target NÃO conectado: %s", deviceID)
 		return false
 	}
-	return conn.Write(ctx, websocket.MessageText, message) == nil
+
+	err := conn.Write(ctx, websocket.MessageText, message)
+
+	if err != nil {
+		log.Printf(
+			"WS WRITE ERRO target=%s err=%v",
+			deviceID,
+			err,
+		)
+		return false
+	}
+
+	log.Printf("WS WRITE OK target=%s", deviceID)
+	return true
 }
 
 type WebSocketController struct {
@@ -139,10 +158,17 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 			wsMessage.Role,
 		)
 
-		c.hub.SendToDevice(
+		sent := c.hub.SendToDevice(
 			r.Context(),
 			targetDevice.DeviceID,
 			message,
+		)
+
+		log.Printf(
+			"WS resultado envio: type=%s target=%s sent=%v",
+			wsMessage.Type,
+			targetDevice.DeviceID,
+			sent,
 		)
 	}
 }
