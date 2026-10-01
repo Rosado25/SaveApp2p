@@ -15,8 +15,9 @@ import (
 
 var socketSession = struct {
 	sync.Mutex
-	cancel context.CancelFunc
-	conn   *websocket.Conn
+	writeMu sync.Mutex
+	cancel  context.CancelFunc
+	conn    *websocket.Conn
 }{}
 
 var chatMessageHandler func(WebSocketMessage)
@@ -200,6 +201,9 @@ func SendWebSocketMessage(
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
+	socketSession.writeMu.Lock()
+	defer socketSession.writeMu.Unlock()
 
 	err = conn.Write(ctx, websocket.MessageText, payload)
 
