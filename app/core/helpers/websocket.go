@@ -212,6 +212,13 @@ func handleWebSocketMessage(message []byte) {
 		return
 	}
 
+	log.Printf(
+		"WS recebido: type=%s role=%s from=%s",
+		wsMessage.Type,
+		wsMessage.Role,
+		wsMessage.SenderDeviceID,
+	)
+
 	switch wsMessage.Type {
 
 	case "chat":
