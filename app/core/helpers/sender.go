@@ -192,12 +192,13 @@ func HandleWebRTCICE(message WebSocketMessage) error {
 	}
 
 	switch message.Role {
-
 	case "sender":
-		return handleSenderICE(candidate)
+		// ICE criado pelo sender → pertence ao receiver deste PC.
+		return handleReceiverICE(candidate)
 
 	case "receiver":
-		return handleReceiverICE(candidate)
+		// ICE criado pelo receiver → pertence ao sender deste PC.
+		return handleSenderICE(candidate)
 
 	default:
 		return fmt.Errorf("WebRTC ICE com role inválido: %q", message.Role)
@@ -230,7 +231,13 @@ func handleReceiverICE(candidate webrtc.ICECandidateInit) error {
 	defer receiverMu.Unlock()
 
 	if receiverConnection == nil {
-		return fmt.Errorf("receiver peer connection does not exist")
+		receiverPendingCandidates = append(
+			receiverPendingCandidates,
+			candidate,
+		)
+
+		log.Println("Receiver ICE candidate guardado para depois")
+		return nil
 	}
 
 	if receiverConnection.RemoteDescription() == nil {

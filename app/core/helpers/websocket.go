@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
-	"github.com/pion/webrtc/v4"
 )
 
 var socketSession = struct {
@@ -203,52 +202,6 @@ func SendWebSocketMessage(
 	defer cancel()
 
 	return conn.Write(ctx, websocket.MessageText, payload)
-}
-
-func HandleWebRTCICEMessage(message WebSocketMessage) error {
-	var candidate webrtc.ICECandidateInit
-
-	data, err := json.Marshal(message.Data)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(data, &candidate); err != nil {
-		return err
-	}
-
-	// Primeiro tentamos determinar se este ICE pertence
-	// à ligação receiver.
-	receiverMu.Lock()
-
-	if receiverConnection != nil {
-		err := receiverConnection.AddICECandidate(candidate)
-		receiverMu.Unlock()
-
-		return err
-	}
-
-	receiverMu.Unlock()
-
-	// Caso contrário, pertence à ligação sender.
-	senderMu.Lock()
-	defer senderMu.Unlock()
-
-	if senderConnection == nil {
-		return fmt.Errorf("nenhuma peer connection WebRTC existe")
-	}
-
-	if senderConnection.RemoteDescription() == nil {
-		senderPendingCandidates = append(
-			senderPendingCandidates,
-			candidate,
-		)
-
-		log.Println("ICE candidate do sender guardado para depois")
-		return nil
-	}
-
-	return senderConnection.AddICECandidate(candidate)
 }
 
 func handleWebSocketMessage(message []byte) {
