@@ -205,6 +205,13 @@ func SendWebSocketMessage(
 	socketSession.writeMu.Lock()
 	defer socketSession.writeMu.Unlock()
 
+	log.Printf(
+		"WS WRITE: type=%s target=%s role=%s",
+		messageType,
+		targetDeviceID,
+		role,
+	)
+
 	err = conn.Write(ctx, websocket.MessageText, payload)
 
 	if err != nil {

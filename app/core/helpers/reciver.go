@@ -119,6 +119,16 @@ func HandleWebRTCOffer(message WebSocketMessage) error {
 		return err
 	}
 
+	log.Printf(
+		"ANSWER: vou enviar agora para %s",
+		receiverTargetID,
+	)
+
+	log.Printf(
+		"ANSWER JSON: %+v",
+		answer,
+	)
+
 	// Enviar Answer.
 	if err := SendWebRTCMessage(
 		receiverTargetID,
