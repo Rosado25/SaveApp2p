@@ -5,6 +5,7 @@ import (
 	"Server/services"
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -129,6 +130,14 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			continue
 		}
+
+		log.Printf(
+			"WS encaminhar: type=%s from=%s -> target=%s role=%s",
+			wsMessage.Type,
+			wsMessage.SenderDeviceID,
+			targetDevice.DeviceID,
+			wsMessage.Role,
+		)
 
 		c.hub.SendToDevice(
 			r.Context(),
