@@ -123,7 +123,7 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 	defer c.hub.remove(deviceID, conn)
 
 	for {
-		_, message, err := conn.Read(r.Context())
+		_, message, err := conn.Read(context.Background())
 		if err != nil {
 			return
 		}
@@ -159,7 +159,7 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 		)
 
 		sent := c.hub.SendToDevice(
-			r.Context(),
+			context.Background(),
 			targetDevice.DeviceID,
 			message,
 		)
