@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/coder/websocket"
+	"github.com/pion/webrtc/v4"
 )
 
 var socketSession = struct {
@@ -29,6 +30,7 @@ type WebSocketMessage struct {
 	Type           string `json:"type"`
 	TargetDeviceID string `json:"targetDeviceID"`
 	SenderDeviceID string `json:"senderDeviceID"`
+	Role           string `json:"role"`
 	Data           any    `json:"data"`
 }
 
@@ -174,6 +176,7 @@ func keepWebSocketAlive(ctx context.Context, conn *websocket.Conn) error {
 func SendWebSocketMessage(
 	targetDeviceID string,
 	messageType string,
+	role string,
 	data any,
 ) error {
 	socketSession.Lock()
@@ -187,6 +190,7 @@ func SendWebSocketMessage(
 	message := WebSocketMessage{
 		Type:           messageType,
 		TargetDeviceID: targetDeviceID,
+		Role:           role,
 		Data:           data,
 	}
 
@@ -199,6 +203,52 @@ func SendWebSocketMessage(
 	defer cancel()
 
 	return conn.Write(ctx, websocket.MessageText, payload)
+}
+
+func HandleWebRTCICEMessage(message WebSocketMessage) error {
+	var candidate webrtc.ICECandidateInit
+
+	data, err := json.Marshal(message.Data)
+	if err != nil {
+		return err
+	}
+
+	if err := json.Unmarshal(data, &candidate); err != nil {
+		return err
+	}
+
+	// Primeiro tentamos determinar se este ICE pertence
+	// à ligação receiver.
+	receiverMu.Lock()
+
+	if receiverConnection != nil {
+		err := receiverConnection.AddICECandidate(candidate)
+		receiverMu.Unlock()
+
+		return err
+	}
+
+	receiverMu.Unlock()
+
+	// Caso contrário, pertence à ligação sender.
+	senderMu.Lock()
+	defer senderMu.Unlock()
+
+	if senderConnection == nil {
+		return fmt.Errorf("nenhuma peer connection WebRTC existe")
+	}
+
+	if senderConnection.RemoteDescription() == nil {
+		senderPendingCandidates = append(
+			senderPendingCandidates,
+			candidate,
+		)
+
+		log.Println("ICE candidate do sender guardado para depois")
+		return nil
+	}
+
+	return senderConnection.AddICECandidate(candidate)
 }
 
 func handleWebSocketMessage(message []byte) {
@@ -232,7 +282,7 @@ func handleWebSocketMessage(message []byte) {
 			log.Println("Erro ao tratar WebRTC answer:", err)
 		}
 
-	case "ice_candidate":
+	case "webrtc_ice":
 		if err := HandleWebRTCICE(wsMessage); err != nil {
 			log.Println("Erro ao tratar WebRTC ICE:", err)
 		}

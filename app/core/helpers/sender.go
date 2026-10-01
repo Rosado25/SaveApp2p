@@ -73,11 +73,14 @@ func StartWebRTCSender(targetDeviceID string) (*webrtc.PeerConnection, error) {
 
 		candidateJSON := candidate.ToJSON()
 
-		SendWebRTCMessage(
+		if err := SendWebRTCMessage(
 			targetDeviceID,
-			"ice_candidate",
+			"webrtc_ice",
+			"sender",
 			candidateJSON,
-		)
+		); err != nil {
+			log.Println("Erro ao enviar ICE candidate:", err)
+		}
 	})
 
 	// Criar Offer.
@@ -98,6 +101,7 @@ func StartWebRTCSender(targetDeviceID string) (*webrtc.PeerConnection, error) {
 	if err := SendWebRTCMessage(
 		targetDeviceID,
 		"webrtc_offer",
+		"sender",
 		offer,
 	); err != nil {
 		peerConnection.Close()
@@ -114,11 +118,13 @@ func StartWebRTCSender(targetDeviceID string) (*webrtc.PeerConnection, error) {
 func SendWebRTCMessage(
 	targetDeviceID string,
 	messageType string,
+	role string,
 	data any,
 ) error {
 	return SendWebSocketMessage(
 		targetDeviceID,
 		messageType,
+		role,
 		data,
 	)
 }
@@ -141,7 +147,7 @@ func HandleWebRTCAnswer(message WebSocketMessage) error {
 	defer senderMu.Unlock()
 
 	if senderConnection == nil {
-		return fmt.Errorf("sender peer connection does not exist")
+		return fmt.Errorf("sender peer connection does not exist 1")
 	}
 
 	var answer webrtc.SessionDescription
@@ -174,13 +180,6 @@ func HandleWebRTCAnswer(message WebSocketMessage) error {
 
 // HandleWebRTCICE trata ICE candidates recebidos.
 func HandleWebRTCICE(message WebSocketMessage) error {
-	senderMu.Lock()
-	defer senderMu.Unlock()
-
-	if senderConnection == nil {
-		return fmt.Errorf("sender peer connection does not exist")
-	}
-
 	var candidate webrtc.ICECandidateInit
 
 	data, err := json.Marshal(message.Data)
@@ -192,16 +191,57 @@ func HandleWebRTCICE(message WebSocketMessage) error {
 		return err
 	}
 
+	switch message.Role {
+
+	case "sender":
+		return handleSenderICE(candidate)
+
+	case "receiver":
+		return handleReceiverICE(candidate)
+
+	default:
+		return fmt.Errorf("WebRTC ICE com role inválido: %q", message.Role)
+	}
+}
+
+func handleSenderICE(candidate webrtc.ICECandidateInit) error {
+	senderMu.Lock()
+	defer senderMu.Unlock()
+
+	if senderConnection == nil {
+		return fmt.Errorf("sender peer connection does not exist")
+	}
+
 	if senderConnection.RemoteDescription() == nil {
 		senderPendingCandidates = append(
 			senderPendingCandidates,
 			candidate,
 		)
 
-		log.Println("ICE candidate guardado para depois")
-
+		log.Println("Sender ICE candidate guardado para depois")
 		return nil
 	}
 
 	return senderConnection.AddICECandidate(candidate)
+}
+
+func handleReceiverICE(candidate webrtc.ICECandidateInit) error {
+	receiverMu.Lock()
+	defer receiverMu.Unlock()
+
+	if receiverConnection == nil {
+		return fmt.Errorf("receiver peer connection does not exist")
+	}
+
+	if receiverConnection.RemoteDescription() == nil {
+		receiverPendingCandidates = append(
+			receiverPendingCandidates,
+			candidate,
+		)
+
+		log.Println("Receiver ICE candidate guardado para depois")
+		return nil
+	}
+
+	return receiverConnection.AddICECandidate(candidate)
 }

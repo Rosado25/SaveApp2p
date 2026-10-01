@@ -100,5 +100,6 @@ func SendMessage(targetDeviceID string, message string) error {
 		targetDeviceID,
 		"chat",
 		message,
+		"",
 	)
 }

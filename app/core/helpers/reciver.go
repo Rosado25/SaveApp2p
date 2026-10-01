@@ -73,13 +73,12 @@ func HandleWebRTCOffer(message WebSocketMessage) error {
 
 		candidateJSON := candidate.ToJSON()
 
-		err := SendWebRTCMessage(
+		if err := SendWebRTCMessage(
 			receiverTargetID,
-			"ice_candidate",
+			"webrtc_ice",
+			"receiver",
 			candidateJSON,
-		)
-
-		if err != nil {
+		); err != nil {
 			log.Println("Erro ao enviar ICE candidate:", err)
 		}
 	})
@@ -124,6 +123,7 @@ func HandleWebRTCOffer(message WebSocketMessage) error {
 	if err := SendWebRTCMessage(
 		receiverTargetID,
 		"webrtc_answer",
+		"receiver",
 		answer,
 	); err != nil {
 		return err
