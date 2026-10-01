@@ -5,6 +5,7 @@ import (
 	"Server/services"
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -68,6 +69,13 @@ func (h *ConnectionHub) SendToDevice(
 		return false
 	}
 
+	log.Printf(
+		"WS SEND HUB: target=%s conn=%p bytes=%d",
+		deviceID,
+		conn,
+		len(message),
+	)
+
 	log.Printf("WS WRITE OK target=%s", deviceID)
 	return true
 }
@@ -112,21 +120,66 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 	conn, err := websocket.Accept(w, r, &websocket.AcceptOptions{
 		InsecureSkipVerify: true, // Native clients authenticate with the JWT cookie.
 	})
+
+	connID := fmt.Sprintf("%p", conn)
+
+	log.Printf(
+		"WS CONEXÃO ABERTA: conn=%s device=%s",
+		connID,
+		deviceID,
+	)
+
 	if err != nil {
 		return
 	}
-	defer conn.Close(websocket.StatusNormalClosure, "connection closed")
+
+	defer func() {
+		log.Printf(
+			"WS CONEXÃO FECHADA: conn=%s device=%s",
+			connID,
+			deviceID,
+		)
+
+		conn.Close(
+			websocket.StatusNormalClosure,
+			"connection closed",
+		)
+	}()
 
 	if previous := c.hub.add(deviceID, conn); previous != nil && previous != conn {
-		_ = previous.Close(websocket.StatusPolicyViolation, "replaced by a new connection")
+		log.Printf(
+			"WS SUBSTITUINDO CONEXÃO: device=%s old=%p new=%p",
+			deviceID,
+			previous,
+			conn,
+		)
+
+		_ = previous.Close(
+			websocket.StatusPolicyViolation,
+			"replaced by a new connection",
+		)
 	}
 	defer c.hub.remove(deviceID, conn)
 
 	for {
+
+		log.Printf(
+			"WS A ESPERA READ: conn=%s device=%s",
+			connID,
+			deviceID,
+		)
+
 		_, message, err := conn.Read(context.Background())
 		if err != nil {
 			return
 		}
+
+		log.Printf(
+			"WS READ: conn=%s device=%s bytes=%d",
+			connID,
+			deviceID,
+			len(message),
+		)
 
 		var wsMessage WebSocketMessage
 
@@ -146,6 +199,16 @@ func (c *WebSocketController) Handle(w http.ResponseWriter, r *http.Request) {
 		wsMessage.SenderDeviceID = deviceID
 
 		message, err = json.Marshal(wsMessage)
+
+		log.Printf(
+			"WS RECEBIDO: conn=%s type=%s from=%s target=%s role=%s",
+			connID,
+			wsMessage.Type,
+			deviceID,
+			wsMessage.TargetDeviceID,
+			wsMessage.Role,
+		)
+
 		if err != nil {
 			continue
 		}
