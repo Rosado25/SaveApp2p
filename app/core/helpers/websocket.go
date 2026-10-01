@@ -201,7 +201,27 @@ func SendWebSocketMessage(
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	return conn.Write(ctx, websocket.MessageText, payload)
+	err = conn.Write(ctx, websocket.MessageText, payload)
+
+	if err != nil {
+		log.Printf(
+			"WS SEND ERRO: type=%s target=%s role=%s err=%v",
+			messageType,
+			targetDeviceID,
+			role,
+			err,
+		)
+		return err
+	}
+
+	log.Printf(
+		"WS SEND OK: type=%s target=%s role=%s",
+		messageType,
+		targetDeviceID,
+		role,
+	)
+
+	return nil
 }
 
 func handleWebSocketMessage(message []byte) {
