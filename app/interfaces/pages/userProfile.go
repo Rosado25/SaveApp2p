@@ -181,23 +181,29 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 	var devices2 []fyne.CanvasObject
 
 	for _, device := range devices {
-		deviceLabel := widget.NewLabel(
+		deviceID := fmt.Sprintf("%v", device["id"])
+		targetDeviceID := deviceID
+
+		deviceLabel := widget.NewButton(
 			fmt.Sprintf(
 				"ID: %v\nNome: %v\nLastSeenAt: %v",
 				device["id"],
 				device["name"],
 				device["last_seen_at"],
 			),
+			func() {
+				_, err := helpers.StartWebRTCSender(targetDeviceID)
+
+				if err != nil {
+					fmt.Println("Erro ao iniciar WebRTC:", err)
+					return
+				}
+
+				fmt.Println("WebRTC iniciado!")
+			},
 		)
 
 		devices2 = append(devices2, deviceLabel)
-	}
-
-	if len(devices2) == 0 {
-		devices2 = append(
-			devices2,
-			widget.NewLabel("Nenhum device encontrado"),
-		)
 	}
 
 	// -------------------------
