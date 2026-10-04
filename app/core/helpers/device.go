@@ -99,7 +99,7 @@ func SendMessage(targetDeviceID string, message string) error {
 	return SendWebSocketMessage(
 		targetDeviceID,
 		"chat",
-		message,
 		"",
+		message,
 	)
 }
