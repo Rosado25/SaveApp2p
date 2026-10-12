@@ -26,6 +26,14 @@ The project aims to provide a desktop environment for user authentication and co
 - **SaveApp2p** — Desktop application and user interface.
 - **API** — Backend responsible for authentication, device connections, and communication.
 
+## Current Status
+
+- User authentication and device identification are implemented.
+- WebSocket communication between connected devices is working.
+- WebRTC signalling is partially implemented, with offer and answer exchange in place.
+- Direct peer-to-peer communication is still under development.
+- The project is actively evolving, with further improvements planned for communication reliability and integration.
+
 ## Purpose
 
 SaveApp2p is a personal software project focused on desktop application development, backend architecture, and real-time communication using Go.
