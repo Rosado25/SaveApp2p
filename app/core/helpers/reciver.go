@@ -3,178 +3,60 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
-	"sync"
 
 	"github.com/pion/webrtc/v4"
 )
 
-var (
-	receiverMu                sync.Mutex
-	receiverConnection        *webrtc.PeerConnection
-	receiverDataChannel       *webrtc.DataChannel
-	receiverTargetID          string
-	receiverPendingCandidates []webrtc.ICECandidateInit
-)
-
-// HandleWebRTCOffer trata um Offer recebido.
+// HandleWebRTCOffer accepts an incoming connection from the verified sender.
 func HandleWebRTCOffer(message WebSocketMessage) error {
-	receiverMu.Lock()
-	defer receiverMu.Unlock()
-
-	receiverTargetID = message.SenderDeviceID
-
-	config := webrtc.Configuration{
-		ICEServers: []webrtc.ICEServer{
-			{
-				URLs: []string{
-					"stun:stun.l.google.com:19302",
-				},
-			},
-		},
+	if message.SenderDeviceID == "" {
+		return fmt.Errorf("sender device ID is empty")
 	}
-
-	peerConnection, err := webrtc.NewPeerConnection(config)
+	if previous := sessionFor(message.SenderDeviceID); previous != nil {
+		closeSession(previous, "substituída por uma nova ligação P2P")
+	}
+	connection, err := webrtc.NewPeerConnection(webRTCConfiguration())
 	if err != nil {
 		return err
 	}
-
-	receiverConnection = peerConnection
-
-	// Quando o outro lado criar o DataChannel,
-	// este callback será chamado.
-	peerConnection.OnDataChannel(func(dataChannel *webrtc.DataChannel) {
-
-		log.Println("DataChannel recebido:", dataChannel.Label())
-
-		receiverDataChannel = dataChannel
-
-		dataChannel.OnOpen(func() {
-			log.Println("WebRTC DataChannel aberto!")
-		})
-
-		dataChannel.OnClose(func() {
-			log.Println("WebRTC DataChannel fechado")
-		})
-
-		dataChannel.OnMessage(func(msg webrtc.DataChannelMessage) {
-			log.Printf(
-				"WebRTC recebeu: %s",
-				string(msg.Data),
-			)
-		})
-	})
-
-	// ICE candidate.
-	peerConnection.OnICECandidate(func(candidate *webrtc.ICECandidate) {
-		if candidate == nil {
-			return
-		}
-
-		candidateJSON := candidate.ToJSON()
-
-		if err := SendWebRTCMessage(
-			receiverTargetID,
-			"webrtc_ice",
-			"receiver",
-			candidateJSON,
-		); err != nil {
-			log.Println("Erro ao enviar ICE candidate:", err)
-		}
-	})
-
-	// Converter Data → SessionDescription.
+	session := newPeerSession(message.SenderDeviceID, connection, false)
+	storeSession(session)
+	configurePeerConnection(session)
+	connection.OnDataChannel(func(dataChannel *webrtc.DataChannel) { configureDataChannel(session, dataChannel) })
 	var offer webrtc.SessionDescription
-
 	data, err := json.Marshal(message.Data)
 	if err != nil {
+		closeSession(session, "oferta P2P inválida")
 		return err
 	}
-
 	if err := json.Unmarshal(data, &offer); err != nil {
+		closeSession(session, "oferta P2P inválida")
 		return err
 	}
-
-	// Aplicar Offer.
-	if err := peerConnection.SetRemoteDescription(offer); err != nil {
+	if err := connection.SetRemoteDescription(offer); err != nil {
+		closeSession(session, "não foi possível aceitar a oferta P2P")
 		return err
 	}
-
-	for _, candidate := range receiverPendingCandidates {
-		if err := peerConnection.AddICECandidate(candidate); err != nil {
-			log.Println("Erro ao adicionar ICE candidate:", err)
-		}
+	if err := addPendingCandidates(session); err != nil {
+		closeSession(session, "candidato ICE inválido")
+		return err
 	}
-
-	receiverPendingCandidates = nil
-
-	// Criar Answer.
-	answer, err := peerConnection.CreateAnswer(nil)
+	answer, err := connection.CreateAnswer(nil)
 	if err != nil {
+		closeSession(session, "não foi possível criar a resposta P2P")
 		return err
 	}
-
-	// Aplicar Answer local.
-	if err := peerConnection.SetLocalDescription(answer); err != nil {
+	if err := connection.SetLocalDescription(answer); err != nil {
+		closeSession(session, "não foi possível configurar a resposta P2P")
 		return err
 	}
-
-	log.Printf(
-		"ANSWER: vou enviar agora para %s",
-		receiverTargetID,
-	)
-
-	log.Printf(
-		"ANSWER JSON: %+v",
-		answer,
-	)
-
-	// Enviar Answer.
-	if err := SendWebRTCMessage(
-		receiverTargetID,
-		"webrtc_answer",
-		"receiver",
-		answer,
-	); err != nil {
+	if err := SendWebRTCMessage(message.SenderDeviceID, "webrtc_answer", "receiver", answer); err != nil {
+		closeSession(session, "não foi possível enviar a resposta P2P")
 		return err
 	}
-
-	log.Println("WebRTC Answer enviado!")
-
 	return nil
 }
 
-// HandleReceiverICE trata ICE candidates recebidos.
-func HandleReceiverICE(message WebSocketMessage) error {
-	receiverMu.Lock()
-	defer receiverMu.Unlock()
+func HandleReceiverICE(message WebSocketMessage) error { return HandleWebRTCICE(message) }
 
-	if receiverConnection == nil {
-		return fmt.Errorf("receiver peer connection does not exist")
-	}
-
-	var candidate webrtc.ICECandidateInit
-
-	data, err := json.Marshal(message.Data)
-	if err != nil {
-		return err
-	}
-
-	if err := json.Unmarshal(data, &candidate); err != nil {
-		return err
-	}
-
-	return receiverConnection.AddICECandidate(candidate)
-}
-
-// SendReceiverData envia dados pelo DataChannel.
-func SendReceiverData(data string) error {
-	receiverMu.Lock()
-	defer receiverMu.Unlock()
-
-	if receiverDataChannel == nil {
-		return fmt.Errorf("data channel is not connected")
-	}
-
-	return receiverDataChannel.SendText(data)
-}
+func SendReceiverData(data string) error { return SendData(data) }

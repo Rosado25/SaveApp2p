@@ -6,6 +6,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
@@ -50,12 +51,14 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 
 	messageEntry := widget.NewEntry()
 	messageEntry.SetPlaceHolder("Digite sua mensagem aqui...")
+	transferStatus := widget.NewLabel("Transferências: nenhuma ativa")
+	activeTransferID := ""
 
 	deviceIDs := make([]string, 0, len(devices))
 	deviceNames := make([]string, 0, len(devices))
 
 	for _, device := range devices {
-		deviceID := fmt.Sprintf("%v", device["id"])
+		deviceID := fmt.Sprintf("%v", device["device_id"])
 		deviceName := fmt.Sprintf("%v", device["name"])
 
 		deviceIDs = append(deviceIDs, deviceID)
@@ -118,6 +121,41 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		})
 	})
 
+	helpers.SetTransferEventHandler(func(event helpers.TransferEvent) {
+		fyne.Do(func() {
+			progress := ""
+			if event.Size > 0 {
+				progress = fmt.Sprintf(" %.1f%%", float64(event.Progress)*100/float64(event.Size))
+			}
+			transferStatus.SetText(fmt.Sprintf("%s: %s%s — %s", event.Name, event.State, progress, event.Message))
+
+			if event.State == helpers.TransferStatePending && event.Incoming {
+				dialog.ShowConfirm(
+					"Receber ficheiro",
+					fmt.Sprintf("%s (%d bytes). Pretende receber este ficheiro?", event.Name, event.Size),
+					func(accepted bool) {
+						if !accepted {
+							_ = helpers.RejectIncomingFile(event.ID)
+							return
+						}
+						dialog.ShowFolderOpen(func(folder fyne.ListableURI, err error) {
+							if err != nil || folder == nil {
+								_ = helpers.RejectIncomingFile(event.ID)
+								return
+							}
+							if err := helpers.AcceptIncomingFile(event.ID, folder.Path()); err != nil {
+								transferStatus.SetText("Erro ao preparar a receção: " + err.Error())
+								return
+							}
+							activeTransferID = event.ID
+						}, w)
+					},
+					w,
+				)
+			}
+		})
+	})
+
 	sendButton := widget.NewButton("Enviar", func() {
 		if selectedDeviceID == "" {
 			fmt.Println("Nenhum device selecionado")
@@ -158,10 +196,39 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		)
 	})
 
+	fileButton := widget.NewButton("Enviar ficheiro", func() {
+		if selectedDeviceID == "" {
+			transferStatus.SetText("Selecione um device antes de enviar um ficheiro")
+			return
+		}
+		dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if err != nil || reader == nil {
+				return
+			}
+			path := reader.URI().Path()
+			_ = reader.Close()
+			transferID, err := helpers.SendFile(selectedDeviceID, path)
+			if err != nil {
+				transferStatus.SetText("Erro ao iniciar transferência: " + err.Error())
+				return
+			}
+			activeTransferID = transferID
+		}, w)
+	})
+
+	cancelTransferButton := widget.NewButton("Cancelar transferência", func() {
+		if activeTransferID == "" {
+			return
+		}
+		if err := helpers.CancelTransfer(activeTransferID); err != nil {
+			transferStatus.SetText("Erro ao cancelar: " + err.Error())
+		}
+	})
+
 	messageInput := container.NewBorder(
 		nil,
 		nil,
-		nil,
+		fileButton,
 		sendButton,
 		messageEntry,
 	)
@@ -181,7 +248,7 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 	var devices2 []fyne.CanvasObject
 
 	for _, device := range devices {
-		deviceID := fmt.Sprintf("%v", device["id"])
+		deviceID := fmt.Sprintf("%v", device["device_id"])
 		targetDeviceID := deviceID
 
 		deviceLabel := widget.NewButton(
@@ -238,6 +305,10 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 
 		widget.NewLabel("Mensagens:"),
 		chat,
+
+		widget.NewSeparator(),
+		transferStatus,
+		cancelTransferButton,
 	)
 
 	w.SetContent(content)
