@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -177,6 +178,11 @@ func (c *WebSocketController) Handle(
 		)
 		return
 	}
+	sourceDevice, err := c.devices.GetDeviceByDeviceID(deviceID)
+	if err != nil || sourceDevice == nil {
+		helpers.JSON(w, http.StatusForbidden, "Device is not associated with this user")
+		return
+	}
 
 	conn, err := websocket.Accept(
 		w,
@@ -329,6 +335,10 @@ func (c *WebSocketController) Handle(
 			)
 			continue
 		}
+		if (wsMessage.Type == "webrtc_offer" || wsMessage.Type == "webrtc_answer" || wsMessage.Type == "webrtc_ice") && (wsMessage.SessionID == "" || len(wsMessage.SessionID) > 128) {
+			log.Printf("WS ERRO: sessionID inválido conn=%s type=%s", connID, wsMessage.Type)
+			continue
+		}
 
 		// ---------------------------------------------------------
 		// PROCURAR DEVICE DESTINO
@@ -341,23 +351,7 @@ func (c *WebSocketController) Handle(
 
 		var targetDevice *models.Device
 
-		if strings.Contains(wsMessage.TargetDeviceID, "-") {
-			log.Printf(
-				"WS DEVICE LOOKUP: target parece ser device_id",
-			)
-
-			targetDevice, err = c.devices.GetDeviceByDeviceID(
-				wsMessage.TargetDeviceID,
-			)
-		} else {
-			log.Printf(
-				"WS DEVICE LOOKUP: target parece ser ID da BD",
-			)
-
-			targetDevice, err = c.devices.GetDeviceByID(
-				wsMessage.TargetDeviceID,
-			)
-		}
+		targetDevice, err = c.devices.GetDeviceByID(wsMessage.TargetDeviceID)
 
 		if err != nil {
 			log.Printf(
@@ -380,7 +374,7 @@ func (c *WebSocketController) Handle(
 		// DEFINIR SENDER
 		// ---------------------------------------------------------
 
-		wsMessage.SenderDeviceID = deviceID
+		wsMessage.SenderDeviceID = strconv.Itoa(sourceDevice.ID)
 
 		// ---------------------------------------------------------
 		// SERIALIZAR NOVAMENTE
@@ -440,6 +434,7 @@ type WebSocketMessage struct {
 	Type           string `json:"type"`
 	TargetDeviceID string `json:"targetDeviceID"`
 	SenderDeviceID string `json:"senderDeviceID"`
+	SessionID      string `json:"sessionID,omitempty"`
 	Role           string `json:"role"`
 	Data           any    `json:"data"`
 }

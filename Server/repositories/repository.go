@@ -220,7 +220,7 @@ func (r *UserRepository) GetDevicesFromUser(userID int64) ([]models.Device, erro
 }
 
 func (r *UserRepository) DeviceIdToName(deviceID string) (*models.Device, error) {
-	query := `SELECT name FROM devices WHERE device_id = ?`
+	query := `SELECT name FROM devices WHERE id = ?`
 	row := r.db.QueryRow(query, deviceID)
 
 	var device models.Device
