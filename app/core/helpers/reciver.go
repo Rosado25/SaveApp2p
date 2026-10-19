@@ -19,7 +19,10 @@ func HandleWebRTCOffer(message WebSocketMessage) error {
 	if err != nil {
 		return err
 	}
-	session := newPeerSession(message.SenderDeviceID, connection, false)
+	if message.SessionID == "" {
+		return fmt.Errorf("session ID is empty")
+	}
+	session := newPeerSession(message.SenderDeviceID, message.SessionID, connection, false)
 	storeSession(session)
 	configurePeerConnection(session)
 	connection.OnDataChannel(func(dataChannel *webrtc.DataChannel) { configureDataChannel(session, dataChannel) })
@@ -50,7 +53,7 @@ func HandleWebRTCOffer(message WebSocketMessage) error {
 		closeSession(session, "não foi possível configurar a resposta P2P")
 		return err
 	}
-	if err := SendWebRTCMessage(message.SenderDeviceID, "webrtc_answer", "receiver", answer); err != nil {
+	if err := sendWebRTCSignal(session, "webrtc_answer", "receiver", answer); err != nil {
 		closeSession(session, "não foi possível enviar a resposta P2P")
 		return err
 	}

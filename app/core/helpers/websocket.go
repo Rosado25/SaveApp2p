@@ -30,6 +30,7 @@ type WebSocketMessage struct {
 	Type           string `json:"type"`
 	TargetDeviceID string `json:"targetDeviceID"`
 	SenderDeviceID string `json:"senderDeviceID"`
+	SessionID      string `json:"sessionID,omitempty"`
 	Role           string `json:"role"`
 	Data           any    `json:"data"`
 }
@@ -179,6 +180,16 @@ func SendWebSocketMessage(
 	role string,
 	data any,
 ) error {
+	return sendWebSocketMessage(targetDeviceID, messageType, role, "", data)
+}
+
+func sendWebSocketMessage(
+	targetDeviceID string,
+	messageType string,
+	role string,
+	sessionID string,
+	data any,
+) error {
 	socketSession.Lock()
 	conn := socketSession.conn
 	socketSession.Unlock()
@@ -190,6 +201,7 @@ func SendWebSocketMessage(
 	message := WebSocketMessage{
 		Type:           messageType,
 		TargetDeviceID: targetDeviceID,
+		SessionID:      sessionID,
 		Role:           role,
 		Data:           data,
 	}

@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/pion/webrtc/v4"
 )
 
@@ -20,6 +21,7 @@ const (
 type peerSession struct {
 	mu                sync.Mutex
 	targetDeviceID    string
+	sessionID         string
 	initiator         bool
 	connection        *webrtc.PeerConnection
 	dataChannel       *webrtc.DataChannel
@@ -33,12 +35,14 @@ type peerSession struct {
 
 var peerSessions = struct {
 	sync.RWMutex
-	sessions map[string]*peerSession
-}{sessions: make(map[string]*peerSession)}
+	sessions     map[string]*peerSession
+	bySessionID map[string]*peerSession
+}{sessions: make(map[string]*peerSession), bySessionID: make(map[string]*peerSession)}
 
-func newPeerSession(targetDeviceID string, connection *webrtc.PeerConnection, initiator bool) *peerSession {
+func newPeerSession(targetDeviceID, sessionID string, connection *webrtc.PeerConnection, initiator bool) *peerSession {
 	return &peerSession{
 		targetDeviceID:    targetDeviceID,
+		sessionID:         sessionID,
 		initiator:         initiator,
 		connection:        connection,
 		ready:             make(chan struct{}),
@@ -57,9 +61,16 @@ func sessionFor(targetDeviceID string) *peerSession {
 	return peerSessions.sessions[targetDeviceID]
 }
 
+func sessionForID(sessionID string) *peerSession {
+	peerSessions.RLock()
+	defer peerSessions.RUnlock()
+	return peerSessions.bySessionID[sessionID]
+}
+
 func storeSession(session *peerSession) {
 	peerSessions.Lock()
 	peerSessions.sessions[session.targetDeviceID] = session
+	peerSessions.bySessionID[session.sessionID] = session
 	peerSessions.Unlock()
 }
 
@@ -67,6 +78,7 @@ func removeSession(session *peerSession) {
 	peerSessions.Lock()
 	if peerSessions.sessions[session.targetDeviceID] == session {
 		delete(peerSessions.sessions, session.targetDeviceID)
+		delete(peerSessions.bySessionID, session.sessionID)
 	}
 	peerSessions.Unlock()
 }
@@ -98,7 +110,7 @@ func configurePeerConnection(session *peerSession) {
 		if session.initiator {
 			role = "sender"
 		}
-		if err := SendWebRTCMessage(session.targetDeviceID, "webrtc_ice", role, candidate.ToJSON()); err != nil {
+		if err := sendWebRTCSignal(session, "webrtc_ice", role, candidate.ToJSON()); err != nil {
 			log.Println("Erro ao enviar ICE candidate:", err)
 		}
 	})
@@ -135,7 +147,7 @@ func StartWebRTCSender(targetDeviceID string) (*webrtc.PeerConnection, error) {
 	if err != nil {
 		return nil, err
 	}
-	session := newPeerSession(targetDeviceID, connection, true)
+	session := newPeerSession(targetDeviceID, uuid.NewString(), connection, true)
 	storeSession(session)
 	configurePeerConnection(session)
 	dataChannel, err := connection.CreateDataChannel(dataChannelLabel, nil)
@@ -153,7 +165,7 @@ func StartWebRTCSender(targetDeviceID string) (*webrtc.PeerConnection, error) {
 		closeSession(session, "não foi possível configurar a oferta P2P")
 		return nil, err
 	}
-	if err := SendWebRTCMessage(targetDeviceID, "webrtc_offer", "sender", offer); err != nil {
+	if err := sendWebRTCSignal(session, "webrtc_offer", "sender", offer); err != nil {
 		closeSession(session, "não foi possível enviar a oferta P2P")
 		return nil, err
 	}
@@ -219,8 +231,12 @@ func SendWebRTCMessage(targetDeviceID, messageType, role string, data any) error
 	return SendWebSocketMessage(targetDeviceID, messageType, role, data)
 }
 
+func sendWebRTCSignal(session *peerSession, messageType, role string, data any) error {
+	return sendWebSocketMessage(session.targetDeviceID, messageType, role, session.sessionID, data)
+}
+
 func HandleWebRTCAnswer(message WebSocketMessage) error {
-	session := sessionFor(message.SenderDeviceID)
+	session := sessionForID(message.SessionID)
 	if session == nil {
 		return fmt.Errorf("sender peer connection does not exist")
 	}
@@ -263,7 +279,7 @@ func HandleWebRTCICE(message WebSocketMessage) error {
 	if err := json.Unmarshal(data, &candidate); err != nil {
 		return err
 	}
-	session := sessionFor(message.SenderDeviceID)
+	session := sessionForID(message.SessionID)
 	if session == nil {
 		return fmt.Errorf("peer connection does not exist")
 	}

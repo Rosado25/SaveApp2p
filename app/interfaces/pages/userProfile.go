@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -58,7 +57,7 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 	deviceNames := make([]string, 0, len(devices))
 
 	for _, device := range devices {
-		deviceID := fmt.Sprintf("%v", device["device_id"])
+		deviceID := fmt.Sprintf("%v", device["id"])
 		deviceName := fmt.Sprintf("%v", device["name"])
 
 		deviceIDs = append(deviceIDs, deviceID)
@@ -242,38 +241,6 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 	)
 
 	// -------------------------
-	// DEVICES INFO
-	// -------------------------
-
-	var devices2 []fyne.CanvasObject
-
-	for _, device := range devices {
-		deviceID := fmt.Sprintf("%v", device["device_id"])
-		targetDeviceID := deviceID
-
-		deviceLabel := widget.NewButton(
-			fmt.Sprintf(
-				"ID: %v\nNome: %v\nLastSeenAt: %v",
-				device["id"],
-				device["name"],
-				device["last_seen_at"],
-			),
-			func() {
-				_, err := helpers.StartWebRTCSender(targetDeviceID)
-
-				if err != nil {
-					fmt.Println("Erro ao iniciar WebRTC:", err)
-					return
-				}
-
-				fmt.Println("WebRTC iniciado!")
-			},
-		)
-
-		devices2 = append(devices2, deviceLabel)
-	}
-
-	// -------------------------
 	// GO BACK
 	// -------------------------
 
@@ -289,16 +256,6 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		gobackButton,
 
 		userLabel,
-
-		widget.NewSeparator(),
-
-		widget.NewLabel("Devices:"),
-		container.New(
-			layout.NewAdaptiveGridLayout(5),
-			devices2...,
-		),
-
-		widget.NewSeparator(),
 
 		widget.NewLabel("Enviar mensagem para:"),
 		deviceSelect,

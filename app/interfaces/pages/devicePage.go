@@ -28,17 +28,7 @@ func ShowDevice(w fyne.Window, a fyne.App, deviceID string) {
 		device["created_at"],
 	)
 
-	targetDeviceID := fmt.Sprintf("%v", device["device_id"])
-	deviceLabel := widget.NewButton(devicInfo, func() {
-		_, err := helpers.StartWebRTCSender(targetDeviceID)
-
-		if err != nil {
-			fmt.Println("Erro ao iniciar WebRTC:", err)
-			return
-		}
-
-		fmt.Println("WebRTC iniciado!")
-	})
+	deviceLabel := widget.NewLabel(devicInfo)
 
 	gobackButton := widget.NewButton("Go back", func() {
 		ShowHome(w, a)

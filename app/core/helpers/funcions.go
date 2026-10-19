@@ -152,7 +152,7 @@ func GetDevicesFromUser(userID string) ([]map[string]interface{}, error) {
 
 func DeviceIdToName(deviceID string) (string, error) {
 
-	req, err := http.NewRequest("GET", apiURL("/DeviceIdToName?device_id="+deviceID), nil)
+	req, err := http.NewRequest("GET", apiURL("/DeviceIdToName?id="+deviceID), nil)
 	if err != nil {
 		return "", err
 	}
