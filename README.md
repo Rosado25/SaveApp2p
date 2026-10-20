@@ -34,6 +34,10 @@ The project aims to provide a desktop environment for user authentication and co
 - Direct peer-to-peer communication is implemented, with send and recive data.
 - The project is actively evolving, with further improvements planned for communication reliability and integration.
 
+## Last Release
+
+- https://github.com/Rosado25/SaveApp2p/releases/tag/v.0.1.0
+
 ## Purpose
 
 SaveApp2p is a personal software project focused on desktop application development, backend architecture, and real-time communication using Go.
