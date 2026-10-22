@@ -30,9 +30,13 @@ The project aims to provide a desktop environment for user authentication and co
 
 - User authentication and device identification are implemented.
 - WebSocket communication between connected devices is working.
-- WebRTC signalling is partially implemented, with offer and answer exchange in place.
-- Direct peer-to-peer communication is still under development.
+- WebRTC signalling is implemented, with offer and answer exchange in place.
+- Direct peer-to-peer communication is implemented, with send and recive data.
 - The project is actively evolving, with further improvements planned for communication reliability and integration.
+
+## Last Release
+
+- https://github.com/Rosado25/SaveApp2p/releases/tag/v.0.1.0
 
 ## Purpose
 
