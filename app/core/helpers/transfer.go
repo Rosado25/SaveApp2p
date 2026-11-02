@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	chunkSize = 16 * 1024
+	chunkSize = 64 * 1024
 	//Max tranfer size is 16 GiB.
 	maxTransferSize = 16 * 1024 * 1024 * 1024
 	chunkHeaderSize = 29
