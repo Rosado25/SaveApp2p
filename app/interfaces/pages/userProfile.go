@@ -3,6 +3,7 @@ package pages
 import (
 	"app/core/helpers"
 	"fmt"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -120,13 +121,48 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		})
 	})
 
+	type transferTiming struct {
+		start time.Time
+	}
+
+	transferTimes := make(map[string]transferTiming)
+
 	helpers.SetTransferEventHandler(func(event helpers.TransferEvent) {
 		fyne.Do(func() {
+
+			eta := ""
+
+			if event.State == helpers.TransferStateSending ||
+				event.State == helpers.TransferStateReceiving {
+
+				timing, exists := transferTimes[event.ID]
+
+				if !exists {
+					timing = transferTiming{
+						start: time.Now(),
+					}
+					transferTimes[event.ID] = timing
+				}
+
+				elapsed := time.Since(timing.start).Seconds()
+
+				if event.Progress > 0 && elapsed > 0.5 {
+					speed := float64(event.Progress) / elapsed
+
+					remaining := float64(event.Size - event.Progress)
+					seconds := remaining / speed
+
+					eta = fmt.Sprintf(" — Restante: %s",
+						time.Duration(seconds*float64(time.Second)).Round(time.Second),
+					)
+				}
+			}
+
 			progress := ""
 			if event.Size > 0 {
 				progress = fmt.Sprintf(" %.1f%%", float64(event.Progress)*100/float64(event.Size))
 			}
-			transferStatus.SetText(fmt.Sprintf("%s: %s%s — %s", event.Name, event.State, progress, event.Message))
+			transferStatus.SetText(fmt.Sprintf("%s: %s%s%s — %s", event.Name, event.State, progress, eta, event.Message))
 
 			if event.State == helpers.TransferStatePending && event.Incoming {
 				dialog.ShowConfirm(
@@ -151,6 +187,14 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 					},
 					w,
 				)
+			}
+
+			if event.State == helpers.TransferStateCompleted ||
+				event.State == helpers.TransferStateFailed ||
+				event.State == helpers.TransferStateCancelled ||
+				event.State == helpers.TransferStateRejected {
+
+				delete(transferTimes, event.ID)
 			}
 		})
 	})
