@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
-func ShowSearchUsers(w fyne.Window ,a fyne.App) {
+func ShowSearchUsers(w fyne.Window, a fyne.App) {
 
 	w.SetTitle("Search Users")
 
@@ -29,7 +29,7 @@ func ShowSearchUsers(w fyne.Window ,a fyne.App) {
 				user["name"],
 				user["email"],
 			), func() {
-				
+
 				id := fmt.Sprintf("%v", user["id"])
 				ShowUserProfile(w, a, id)
 			},
@@ -48,7 +48,7 @@ func ShowSearchUsers(w fyne.Window ,a fyne.App) {
 	)
 
 	gobackButton := widget.NewButton("Go back", func() {
-		ShowHome(w,a)
+		ShowHome(w, a)
 	})
 
 	content := container.NewVBox(gobackButton, grid)

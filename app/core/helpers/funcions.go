@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -180,4 +181,33 @@ func DeviceIdToName(deviceID string) (string, error) {
 	}
 
 	return name, nil
+}
+
+func GetDevicesOnlineByUser(UserID string) ([]map[string]interface{}, error) {
+	req, err := http.NewRequest("GET", apiURL("/DevicesOnlineByUser?id="+UserID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	token := GetToken()
+	if token != "" {
+		req.AddCookie(&http.Cookie{Name: "token", Value: token})
+	}
+
+	resp, err := apiClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("API returned status: %d", resp.StatusCode)
+	}
+
+	var devices []map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&devices); err != nil {
+		return nil, err
+	}
+
+	return devices, nil
 }

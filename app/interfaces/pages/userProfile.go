@@ -21,10 +21,10 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		return
 	}
 
-	devices, err := helpers.GetDevicesFromUser(userID)
+	devices, err := helpers.GetDevicesOnlineByUser(userID)
 	if err != nil {
-		fmt.Println("Erro ao carregar devices do utilizador:", err)
-		w.SetContent(widget.NewLabel("Erro ao carregar devices do utilizador: " + err.Error()))
+		fmt.Println("Erro ao carregar devices:", err)
+		w.SetContent(widget.NewLabel("Erro ao carregar devices: " + err.Error()))
 		return
 	}
 
@@ -61,14 +61,17 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 		deviceID := fmt.Sprintf("%v", device["id"])
 		deviceName := fmt.Sprintf("%v", device["name"])
 
+		online, _ := device["online"].(bool)
+
+		status := "🔴"
+		if online {
+			status = "🟢"
+		}
+
 		deviceIDs = append(deviceIDs, deviceID)
 		deviceNames = append(
 			deviceNames,
-			fmt.Sprintf(
-				"%s (ID: %s)",
-				deviceName,
-				deviceID,
-			),
+			fmt.Sprintf("%s %s (ID: %s)", status, deviceName, deviceID),
 		)
 	}
 
