@@ -63,9 +63,9 @@ func ShowUserProfile(w fyne.Window, a fyne.App, userID string) {
 
 		online, _ := device["online"].(bool)
 
-		status := "🔴"
+		status := "Offline"
 		if online {
-			status = "🟢"
+			status = "Online"
 		}
 
 		deviceIDs = append(deviceIDs, deviceID)
