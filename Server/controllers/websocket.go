@@ -104,6 +104,14 @@ func (h *ConnectionHub) SendToDevice(
 	return true
 }
 
+func (h *ConnectionHub) IsOnline(deviceID string) bool {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+
+	_, online := h.connections[deviceID]
+	return online
+}
+
 type WebSocketController struct {
 	devices *services.DeviceService
 	hub     *ConnectionHub

@@ -12,10 +12,14 @@ import (
 
 type DeviceController struct {
 	service *services.DeviceService
+	hub     *ConnectionHub
 }
 
-func NewDeviceController(s *services.DeviceService) *DeviceController {
-	return &DeviceController{service: s}
+func NewDeviceController(s *services.DeviceService, hub *ConnectionHub) *DeviceController {
+	return &DeviceController{
+		service: s,
+		hub:     hub,
+	}
 }
 
 func (c *DeviceController) CreateDevice(w http.ResponseWriter, r *http.Request) {
@@ -153,5 +157,48 @@ func (c *DeviceController) DeviceIdToName(w http.ResponseWriter, r *http.Request
 	}
 
 	response := Device.Name
+	helpers.JSON(w, http.StatusOK, response)
+}
+
+func (c *DeviceController) GetOnlineDevicesByUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		helpers.JSON(w, http.StatusMethodNotAllowed,
+			"Method not allowed")
+		return
+	}
+
+	userID := r.URL.Query().Get("id")
+	if userID == "" {
+		helpers.JSON(w, http.StatusBadRequest, "id is required")
+		return
+	}
+
+	userIDInt, err := helpers.StringToInt64(userID)
+	if err != nil {
+		helpers.JSON(w, http.StatusBadRequest, "Invalid user ID")
+		return
+	}
+
+	devices, err := c.service.GetDevicesByUser(userIDInt)
+	if err != nil {
+		helpers.JSON(w, http.StatusInternalServerError,
+			err.Error())
+		return
+	}
+
+	type DeviceStatus struct {
+		models.Device
+		Online bool `json:"online"`
+	}
+
+	response := make([]DeviceStatus, 0, len(devices))
+
+	for _, device := range devices {
+		response = append(response, DeviceStatus{
+			Device: device,
+			Online: c.hub.IsOnline(device.DeviceID),
+		})
+	}
+
 	helpers.JSON(w, http.StatusOK, response)
 }

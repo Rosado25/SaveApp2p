@@ -27,9 +27,10 @@ func main() {
 	authService := services.NewAuthService(userRepo)
 	authController := controllers.NewAuthController(authService)
 
-	deviceService := services.NewDeviceService(userRepo)
-	deviceController := controllers.NewDeviceController(deviceService)
 	connectionHub := controllers.NewConnectionHub()
+
+	deviceService := services.NewDeviceService(userRepo)
+	deviceController := controllers.NewDeviceController(deviceService, connectionHub)
 
 	webSocketController := controllers.NewWebSocketController(
 		deviceService,
