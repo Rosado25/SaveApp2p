@@ -9,11 +9,21 @@ import (
 )
 
 type UserController struct {
-	service *services.UserService
+	service       *services.UserService
+	deviceService *services.DeviceService
+	hub           *ConnectionHub
 }
 
-func NewUserController(s *services.UserService) *UserController {
-	return &UserController{service: s}
+func NewUserController(
+	s *services.UserService,
+	ds *services.DeviceService,
+	hub *ConnectionHub,
+) *UserController {
+	return &UserController{
+		service:       s,
+		deviceService: ds,
+		hub:           hub,
+	}
 }
 
 func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -42,20 +52,48 @@ func (c *UserController) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 func (c *UserController) GetUsers(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
-		helpers.JSON(w, 405, "Method not allowed")
+		helpers.JSON(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
-	response, err := c.service.GetUsers()
+	users, err := c.service.GetUsers()
 	if err != nil {
-		helpers.JSON(w, 500, err.Error())
+		helpers.JSON(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	for i := range response {
-		response[i].Password = ""
+
+	type UserStatus struct {
+		models.User
+		Online bool `json:"online"`
 	}
 
-	helpers.JSON(w, 200, response)
+	response := make([]UserStatus, 0, len(users))
+
+	for _, user := range users {
+		user.Password = ""
+
+		devices, err := c.deviceService.GetDevicesByUser(user.ID)
+		if err != nil {
+			helpers.JSON(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		online := false
+
+		for _, device := range devices {
+			if c.hub.IsOnline(device.DeviceID) {
+				online = true
+				break
+			}
+		}
+
+		response = append(response, UserStatus{
+			User:   user,
+			Online: online,
+		})
+	}
+
+	helpers.JSON(w, http.StatusOK, response)
 }
 
 func (c *UserController) GetUserByID(w http.ResponseWriter, r *http.Request) {
