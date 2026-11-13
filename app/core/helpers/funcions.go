@@ -3,6 +3,7 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -14,7 +15,10 @@ func GetUsers() ([]map[string]interface{}, error) {
 
 	token := GetToken()
 	if token != "" {
-		req.AddCookie(&http.Cookie{Name: "token", Value: token})
+		req.AddCookie(&http.Cookie{
+			Name:  "token",
+			Value: token,
+		})
 	}
 
 	resp, err := apiClient.Do(req)
@@ -24,10 +28,13 @@ func GetUsers() ([]map[string]interface{}, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, err
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("GetUsers failed: status %d: %s",
+			resp.StatusCode, string(body))
 	}
 
 	var users []map[string]interface{}
+
 	if err := json.NewDecoder(resp.Body).Decode(&users); err != nil {
 		return nil, err
 	}

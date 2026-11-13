@@ -17,19 +17,28 @@ func ShowSearchUsers(w fyne.Window, a fyne.App) {
 	users, err := helpers.GetUsers()
 	if err != nil {
 		fmt.Println("Erro ao carregar utilizadores:", err)
+		return
 	}
 
 	var userItems []fyne.CanvasObject
 
 	for _, user := range users {
+
+		status := "Offline"
+
+		if online, ok := user["online"].(bool); ok && online {
+			status = "Online"
+		}
+
 		userLabel := widget.NewButton(
 			fmt.Sprintf(
-				"ID: %v\nNome: %v\nEmail: %v",
+				"ID: %v\nNome: %v\nEmail: %v\nEstado: %s",
 				user["id"],
 				user["name"],
 				user["email"],
-			), func() {
-
+				status,
+			),
+			func() {
 				id := fmt.Sprintf("%v", user["id"])
 				ShowUserProfile(w, a, id)
 			},
