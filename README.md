@@ -36,8 +36,8 @@ The project aims to provide a desktop environment for user authentication and co
 
 ## Last Release
 
-- https://github.com/Rosado25/SaveApp2p/releases/tag/v.0.1.0
-
+- https://github.com/Rosado25/SaveApp2p/releases/tag/v.0.1.2
+  
 ## Purpose
 
 SaveApp2p is a personal software project focused on desktop application development, backend architecture, and real-time communication using Go.
